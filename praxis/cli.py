@@ -16,6 +16,7 @@ from .decisions import (
     InvalidDecisionError,
     InvalidDecisionTransitionError,
     UnknownDecisionError,
+    UnknownTaskError,
     abandon_decision,
     add_later_evidence,
     create_decision,
@@ -192,6 +193,8 @@ def _error_code(error: Exception) -> str:
         return "revision_conflict"
     if isinstance(error, DecisionConflictError):
         return "decision_conflict"
+    if isinstance(error, UnknownTaskError):
+        return "unknown_task"
     if isinstance(error, UnknownDecisionError):
         return "unknown_decision"
     if isinstance(error, InvalidDecisionTransitionError):
@@ -199,8 +202,6 @@ def _error_code(error: Exception) -> str:
     if isinstance(error, DecisionRenderError):
         return "decision_render_failed"
     if isinstance(error, InvalidDecisionError):
-        if str(error).startswith("unknown task id:"):
-            return "unknown_task"
         return "invalid_decision"
     if isinstance(error, DecisionError):
         return "invalid_decision"
