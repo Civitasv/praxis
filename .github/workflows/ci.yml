@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version:
+          - '3.10'
+          - '3.13'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Compile Python sources
+        run: python -m compileall -q praxis tests
+
+  typescript:
+    name: TypeScript / DSH seam
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.7.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.20.0
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test DSH adapter seam
+        run: pnpm test:dsh
