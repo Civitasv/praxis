@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import copy
 import json
+import os
 from pathlib import Path
-from typing import Any
+import tempfile
+from typing import Any, Callable
 
+from .locking import StateLock
 from .project import state_directory, state_file
 
 
@@ -25,6 +29,14 @@ class InvalidStateError(PraxisStateError):
 
 
 class UnsupportedFormatError(PraxisStateError):
+    pass
+
+
+class StateNotInitializedError(PraxisStateError):
+    pass
+
+
+class StateWriteError(PraxisStateError):
     pass
 
 
@@ -66,36 +78,118 @@ def load_state(project_root: Path) -> dict[str, Any] | None:
     try:
         text = path.read_text(encoding="utf-8")
         value = json.loads(text)
-    except (OSError, UnicodeError, json.JSONDecodeError) as error:
-        raise MalformedStateError(f"unable to read valid Praxis state: {path}") from error
+    except json.JSONDecodeError as error:
+        raise MalformedStateError(f"unable to parse Praxis state: {path}") from error
+    except (OSError, UnicodeError) as error:
+        raise MalformedStateError(f"unable to read Praxis state: {path}") from error
     return _validate_state(value)
 
 
-def _write_state_unlocked(project_root: Path, state: dict[str, Any]) -> None:
+def _fsync_directory(directory: Path) -> None:
+    try:
+        descriptor = os.open(directory, os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(descriptor)
+    except OSError:
+        pass
+    finally:
+        os.close(descriptor)
+
+
+def _atomic_write_state(project_root: Path, state: dict[str, Any]) -> None:
+    _validate_state(state)
     directory = state_directory(project_root, create=True)
-    path = directory / "state.json"
-    path.write_text(json.dumps(state, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    path = state_file(project_root)
+    try:
+        payload = json.dumps(state, ensure_ascii=False, sort_keys=True) + "\n"
+    except (TypeError, ValueError) as error:
+        raise StateWriteError("Praxis state is not JSON serializable") from error
+
+    descriptor: int | None = None
+    temporary_path: Path | None = None
+    try:
+        descriptor, raw_path = tempfile.mkstemp(prefix=".state-", dir=directory)
+        temporary_path = Path(raw_path)
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
+            descriptor = None
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_path, path)
+        temporary_path = None
+        _fsync_directory(directory)
+    except (OSError, UnicodeError) as error:
+        raise StateWriteError(f"failed to persist Praxis state: {path}") from error
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        if temporary_path is not None:
+            try:
+                temporary_path.unlink()
+            except FileNotFoundError:
+                pass
 
 
-def enable_state(project_root: Path, expected_revision: int | None = None) -> dict[str, Any]:
+def _mutate_locked(
+    project_root: Path,
+    expected_revision: int,
+    mutator: Callable[[dict[str, Any]], dict[str, Any] | None],
+) -> dict[str, Any]:
     current = load_state(project_root)
     if current is None:
-        state: dict[str, Any] = {
-            "format_version": FORMAT_VERSION,
-            "revision": 0,
-            "enabled": True,
-            "tasks": {},
-        }
-        _write_state_unlocked(project_root, state)
-        return state
-
-    if current["enabled"] is True:
-        return current
+        raise StateNotInitializedError("Praxis state is not initialized")
     if expected_revision != current["revision"]:
         raise RevisionConflictError(expected_revision, current["revision"])
 
-    updated = dict(current)
-    updated["enabled"] = True
+    working = copy.deepcopy(current)
+    candidate = mutator(working)
+    updated = working if candidate is None else candidate
+    if not isinstance(updated, dict):
+        raise InvalidStateError("state mutator must return an object or None")
     updated["revision"] = current["revision"] + 1
-    _write_state_unlocked(project_root, updated)
+    _validate_state(updated)
+    _atomic_write_state(project_root, updated)
     return updated
+
+
+def mutate_state(
+    project_root: Path,
+    expected_revision: int,
+    mutator: Callable[[dict[str, Any]], dict[str, Any] | None],
+) -> dict[str, Any]:
+    with StateLock(project_root):
+        return _mutate_locked(project_root, expected_revision, mutator)
+
+
+def enable_state(project_root: Path, expected_revision: int | None = None) -> dict[str, Any]:
+    with StateLock(project_root):
+        current = load_state(project_root)
+        if current is None:
+            state: dict[str, Any] = {
+                "format_version": FORMAT_VERSION,
+                "revision": 0,
+                "enabled": True,
+                "tasks": {},
+            }
+            _atomic_write_state(project_root, state)
+            return state
+
+        if current["enabled"] is True:
+            return current
+        if expected_revision != current["revision"]:
+            raise RevisionConflictError(expected_revision, current["revision"])
+        return _mutate_locked(
+            project_root,
+            current["revision"],
+            lambda state: {**state, "enabled": True},
+        )
+
+
+def pause_state(project_root: Path, expected_revision: int) -> dict[str, Any]:
+    return mutate_state(
+        project_root,
+        expected_revision,
+        lambda state: {**state, "enabled": False},
+    )
