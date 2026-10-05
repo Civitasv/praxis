@@ -1,0 +1,19 @@
+{
+  "name": "praxis",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "scripts": {
+    "typecheck": "tsc -p plugins/dsh/tsconfig.json --pretty false",
+    "test:dsh": "node --experimental-strip-types --test plugins/dsh/test/*.test.ts",
+    "check:dsh": "pnpm typecheck && pnpm test:dsh"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "^6.0.3"
+  }
+}

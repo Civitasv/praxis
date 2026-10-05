@@ -1,0 +1,12 @@
+{
+  "name": "@praxis/plugin-dsh",
+  "version": "0.1.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
