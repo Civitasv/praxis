@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+import praxis.state as state_module
 from praxis.state import (
     FORMAT_VERSION,
     InvalidStateError,
@@ -47,6 +48,24 @@ class StateSchemaTests(unittest.TestCase):
                 load_state(root)
             with self.assertRaises(MalformedStateError):
                 enable_state(root)
+            self.assertEqual(path.read_bytes(), original)
+
+    def test_state_read_failure_is_reported_separately_and_preserves_bytes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            directory = root / ".praxis"
+            directory.mkdir()
+            path = directory / "state.json"
+            original = json.dumps({
+                "format_version": 1,
+                "revision": 0,
+                "enabled": True,
+                "tasks": {},
+            }).encode("utf-8")
+            path.write_bytes(original)
+            with patch("pathlib.Path.read_text", side_effect=PermissionError("denied")):
+                with self.assertRaises(state_module.StateReadError):
+                    load_state(root)
             self.assertEqual(path.read_bytes(), original)
 
     def test_invalid_schema_is_rejected(self) -> None:
