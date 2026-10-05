@@ -1,5 +1,4 @@
 import hashlib
-import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -7,7 +6,7 @@ from unittest.mock import patch
 
 from praxis.fingerprints import EvidenceError
 from praxis.project_map import get_project_model, refresh_staleness, upsert_section
-from praxis.state import enable_state, load_state, mutate_state
+from praxis.state import enable_state, mutate_state
 
 
 class ProjectMapStalenessTests(unittest.TestCase):
@@ -106,6 +105,40 @@ class ProjectMapStalenessTests(unittest.TestCase):
                 before_model["sections"]["a"]["revision"],
             )
             self.assertEqual(state_path.read_bytes(), before_bytes)
+
+    def test_stale_section_stays_stale_when_source_reverts_until_explicit_upsert(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            enable_state(root)
+            source = self.make_source(root, "a.py", "v1")
+            upsert_section(root, "a", "A", "A model v1.", ["a.py"])
+            source.write_text("v2", encoding="utf-8")
+            stale = refresh_staleness(root)
+            stale_model = get_project_model(stale)
+            self.assertEqual(stale_model["sections"]["a"]["status"], "stale")
+
+            source.write_text("v1", encoding="utf-8")
+            with patch("praxis.state._atomic_write_state", side_effect=AssertionError("revert alone must not clear stale")):
+                still_stale = refresh_staleness(root)
+
+            self.assertEqual(still_stale, stale)
+            section = get_project_model(still_stale)["sections"]["a"]
+            self.assertEqual(section["status"], "stale")
+            self.assertEqual(section["stale_reasons"], [{"path": "a.py", "reason": "changed"}])
+            self.assertEqual(section["revision"], 0)
+
+            refreshed = upsert_section(
+                root,
+                "a",
+                "A",
+                "A model v1 re-read.",
+                ["a.py"],
+                expected_section_revision=0,
+            )
+            refreshed_section = get_project_model(refreshed)["sections"]["a"]
+            self.assertEqual(refreshed_section["status"], "verified")
+            self.assertEqual(refreshed_section["stale_reasons"], [])
+            self.assertEqual(refreshed_section["revision"], 1)
 
     def test_unsafe_stored_evidence_is_marked_stale_instead_of_followed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as outside:
