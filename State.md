@@ -8,23 +8,33 @@ Feature-01: Implemented
 - DSH TypeScript boundary: Implemented
 - GitHub Actions CI: Implemented
 
-Feature-02: Pending — Praxis state core
+Feature-02: Implemented
+- Project boundary discovery: Implemented
+- Versioned state schema: Implemented
+- Atomic CAS state writes: Implemented
+- Durable multi-task lifecycle: Implemented
+- JSON CLI state contract: Implemented
+
 Feature-03: Pending — Verified project model
 Feature-04: Pending — Tutor decision loop
 Feature-05: Pending — Codex integration
 Feature-06: Pending — DSH integration
 
-## Implemented foundation
+## Implemented state core
 
-- `AGENTS.md`, `Code.md`, `State.md`, Architecture/Spec/Development docs define the AI-native repository contract.
-- `praxis/` exposes the standard-library Python baseline and `python -m praxis --version`.
-- generated project-local `.praxis/` state is ignored by the repository.
-- `plugins/dsh/` exposes only a TypeScript adapter seam; DSH runtime behavior is not implemented yet.
-- `.github/workflows/ci.yml` validates Python 3.10/3.13 and the TypeScript/DSH seam on pull requests and pushes to `master`.
+- `praxis/project.py` resolves the nearest Git/worktree boundary and rejects symlinked `.praxis` directories or `state.json` files.
+- `.praxis/state.json` uses format version `1`, machine-owned revisions, an `enabled` flag, and durable task records.
+- writes use a bounded lock directory plus temporary-file flush/fsync and atomic replacement.
+- state mutations use compare-and-swap expected revisions; stale writers receive a conflict instead of overwriting newer state.
+- malformed, invalid, unsupported, or unsafe state is reported without silently replacing the original file.
+- `praxis/tasks.py` creates core-owned task ids and updates tasks through the same state mutation path so multiple tasks do not overwrite each other.
+- pause/resume changes the enabled flag while preserving task state; it does not imply approval or completion.
+- `praxis status|enable|pause|task-create|task-update` expose a stable JSON boundary for future host adapters.
+- `status` on a project without Praxis state is read-only and does not create `.praxis/`.
 
 ## Validation contract
 
-Feature-01 validation commands are:
+Current repository validation commands are:
 
 ```bash
 python -m unittest discover -s tests -v
@@ -37,4 +47,4 @@ A check is Green only when it actually runs successfully. GitHub Actions is auth
 
 ## Not implemented yet
 
-Praxis does not yet provide durable `.praxis/state.json` semantics, task concurrency/CAS, verified project fingerprints, Tutor decision behavior, Codex lifecycle hooks, or native DSH/Cordis runtime integration. Those remain Features 02–06.
+Praxis does not yet provide verified project fingerprints or `code.md` stale-section semantics, durable decision provenance / Tutor behavior, Codex lifecycle hooks, or native DSH/Cordis runtime integration. Those remain Features 03–06.
