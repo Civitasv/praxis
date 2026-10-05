@@ -3,16 +3,22 @@
 from __future__ import annotations
 
 import copy
+import os
 from pathlib import Path
+import re
 import secrets
+import stat
+import tempfile
 from typing import Any, Callable, Iterable
 
-from .state import mutate_latest_state
+from .project import state_directory
+from .state import load_state, mutate_latest_state
 
 
 DURABLE_DECISION_CLASSES = {"engineering", "architectural"}
 DECISION_STATUSES = {"open", "selected", "implemented", "verified", "superseded", "abandoned"}
 TERMINAL_DECISION_STATUSES = {"verified", "superseded", "abandoned"}
+_DECISIONS_MARKER = re.compile(r'<!-- praxis:decisions revision="([0-9]+)" -->')
 
 
 class DecisionError(RuntimeError):
@@ -313,3 +319,172 @@ def add_later_evidence(
         return True
 
     return _mutate_decision(project_root, decision_id, expected_decision_revision, edit)
+
+
+def _decisions_path(project_root: Path, *, create_directory: bool = False) -> Path:
+    directory = state_directory(project_root, create=create_directory)
+    path = directory / "decisions.md"
+    try:
+        mode = path.lstat().st_mode
+    except FileNotFoundError:
+        return path
+    if stat.S_ISLNK(mode) or not stat.S_ISREG(mode):
+        raise DecisionRenderError(f"Praxis decision trail must be a real file: {path}")
+    return path
+
+
+def _render_value(value: str | None) -> list[str]:
+    return [value if value is not None else "Not recorded"]
+
+
+def _render_list(values: list[str]) -> list[str]:
+    if not values:
+        return ["Not recorded"]
+    return [f"- {value}" for value in values]
+
+
+def _render_decisions_text(aggregate: dict[str, Any]) -> str:
+    lines = [
+        "# Praxis Decision Trail",
+        "",
+        f'<!-- praxis:decisions revision="{aggregate["revision"]}" -->',
+        "",
+    ]
+    fields: list[tuple[str, str, bool]] = [
+        ("Context", "context", False),
+        ("User proposal", "user_proposal", False),
+        ("Verified constraints", "verified_constraints", True),
+        ("Praxis challenge", "praxis_challenge", False),
+        ("Alternatives discussed", "alternatives", True),
+        ("Selected decision", "selected_decision", False),
+        ("User reasoning", "user_reasoning", False),
+        ("Accepted tradeoffs", "accepted_tradeoffs", True),
+        ("Blocked scopes", "blocked_scopes", True),
+        ("Implementation result", "implementation_result", False),
+        ("Verification", "verification", False),
+        ("Later evidence", "later_evidence", True),
+    ]
+    for decision_id in sorted(aggregate["records"]):
+        record = aggregate["records"][decision_id]
+        lines.extend(
+            [
+                f'## {record["title"]}',
+                f'<!-- praxis:decision id="{decision_id}" revision="{record["revision"]}" status="{record["status"]}" class="{record["class"]}" task="{record["task_id"]}" -->',
+                "",
+            ]
+        )
+        for heading, key, is_list in fields:
+            lines.append(f"### {heading}")
+            if is_list:
+                lines.extend(_render_list(record.get(key, [])))
+            else:
+                lines.extend(_render_value(record.get(key)))
+            lines.append("")
+        if record.get("superseding_decision_id") is not None:
+            lines.extend(["### Superseded by", record["superseding_decision_id"], ""])
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _fsync_directory(directory: Path) -> None:
+    try:
+        descriptor = os.open(directory, os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(descriptor)
+    except OSError:
+        pass
+    finally:
+        os.close(descriptor)
+
+
+def render_decisions(project_root: Path) -> Path:
+    """Atomically rebuild `.praxis/decisions.md` from authoritative decision state."""
+
+    root = Path(project_root).resolve()
+    state = load_state(root)
+    if state is None or "decisions" not in state:
+        raise InvalidDecisionError("decisions are not initialized")
+    aggregate = get_decisions(state)
+    payload = _render_decisions_text(aggregate)
+    path = _decisions_path(root, create_directory=True)
+    directory = path.parent
+
+    descriptor: int | None = None
+    temporary_path: Path | None = None
+    try:
+        descriptor, raw_path = tempfile.mkstemp(prefix=".decisions-", dir=directory)
+        temporary_path = Path(raw_path)
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
+            descriptor = None
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_path, path)
+        temporary_path = None
+        _fsync_directory(directory)
+    except (OSError, UnicodeError) as error:
+        raise DecisionRenderError(f"failed to render Praxis decision trail: {path}") from error
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        if temporary_path is not None:
+            try:
+                temporary_path.unlink()
+            except FileNotFoundError:
+                pass
+    return path
+
+
+def _rendered_decisions_revision(project_root: Path) -> int | None:
+    path = _decisions_path(project_root)
+    if not path.exists():
+        return None
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        raise DecisionRenderError(f"unable to read Praxis decision trail: {path}") from error
+    match = _DECISIONS_MARKER.search(text)
+    if match is None:
+        return None
+    return int(match.group(1))
+
+
+def decisions_status(project_root: Path, *, task_id: str | None = None) -> dict[str, Any]:
+    """Return read-only decision lifecycle and projection status."""
+
+    root = Path(project_root).resolve()
+    state = load_state(root)
+    if state is None or "decisions" not in state:
+        return {
+            "exists": False,
+            "revision": None,
+            "decisions": [],
+            "open_decisions": [],
+            "blocked_scopes": [],
+            "render_required": False,
+        }
+
+    aggregate = get_decisions(state)
+    records = list_decisions(state, task_id=task_id)
+    summaries = [
+        {
+            "id": decision_id,
+            "task_id": record["task_id"],
+            "class": record["class"],
+            "status": record["status"],
+            "title": record["title"],
+            "revision": record["revision"],
+        }
+        for decision_id, record in sorted(records.items())
+    ]
+    open_ids = [item["id"] for item in summaries if item["status"] == "open"]
+    return {
+        "exists": True,
+        "revision": aggregate["revision"],
+        "decisions": summaries,
+        "open_decisions": open_ids,
+        "blocked_scopes": decision_blocked_scopes(state, task_id=task_id),
+        "render_required": _rendered_decisions_revision(root) != aggregate["revision"],
+    }
