@@ -34,6 +34,10 @@ class MalformedStateError(PraxisStateError):
     pass
 
 
+class StateReadError(PraxisStateError):
+    pass
+
+
 class InvalidStateError(PraxisStateError):
     pass
 
@@ -123,11 +127,12 @@ def load_state(project_root: Path) -> dict[str, Any] | None:
         return None
     try:
         text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        raise StateReadError(f"unable to read Praxis state: {path}") from error
+    try:
         value = json.loads(text)
     except json.JSONDecodeError as error:
         raise MalformedStateError(f"unable to parse Praxis state: {path}") from error
-    except (OSError, UnicodeError) as error:
-        raise MalformedStateError(f"unable to read Praxis state: {path}") from error
     return _validate_state(value)
 
 
