@@ -22,7 +22,7 @@ Never collapse these fields:
 - verification result;
 - later evidence or inference.
 
-AI recommendation is not approval. AI-authored rationale must not be stored as user reasoning unless the user actually adopts it.
+AI recommendation is not approval. Never attribute Praxis-authored rationale to user reasoning. If the user does not state or adopt a reason, leave user reasoning unrecorded.
 
 ## Lifecycle
 
@@ -41,6 +41,6 @@ Recovery, silence, session changes, or AI preference do not advance lifecycle st
 
 ## Blocking
 
-Open decisions may declare blocked scopes. Only those dependent scopes are blocked. The rest of the task may continue when independent and safe.
+Open decisions may declare blocked scopes. Only the affected declared scope waits. Unrelated mechanical work may continue. Independent work outside the declared blocked scopes may continue when safe.
 
 The durable decision records are authoritative for unresolved choices. Legacy task presentation hints are not approval and are not the source of truth.
