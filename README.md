@@ -18,9 +18,24 @@ Harness-specific APIs must not enter the neutral Python core.
 
 ## Current status
 
-Feature-01 repository foundation is implemented: AI-native repository contracts, a neutral Python CLI baseline, the DSH TypeScript package seam, and GitHub Actions validation exist. Features 02–06 will add durable state, verified project understanding, Tutor behavior, Codex integration, and native DSH integration.
+Feature-01 repository foundation and Feature-02 Praxis State Core are implemented.
 
-No current Feature-01 code claims those later runtime capabilities.
+Feature-02 provides project-boundary discovery, symlink-safe project state paths, format-versioned `.praxis/state.json`, bounded write locking, atomic replacement, compare-and-swap revisions, durable multi-task records, pause/resume state, and a JSON CLI contract for future host adapters.
+
+Installing Praxis still does not enable a project. Explicit `praxis enable --cwd <path>` creates project-local state; `praxis status --cwd <path>` is read-only when no state exists.
+
+Features 03–06 will add the verified project model and stale detection, Tutor decision provenance/behavior, Codex lifecycle integration, and native DSH integration. Current code does not claim those capabilities.
+
+## State CLI
+
+```bash
+python -m praxis status --cwd .
+python -m praxis enable --cwd .
+python -m praxis pause --cwd . --expected-revision 0
+python -m praxis task-create --cwd . --expected-revision 0 --host codex --title "Auth design"
+```
+
+State commands emit JSON for adapter consumption. Mutations require the caller's expected revision where applicable so stale writers cannot overwrite newer state.
 
 ## Repository navigation
 
