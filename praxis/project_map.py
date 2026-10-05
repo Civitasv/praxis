@@ -3,15 +3,20 @@
 from __future__ import annotations
 
 import copy
+import os
 import re
 from pathlib import Path
+import stat
+import tempfile
 from typing import Any, Iterable
 
 from .fingerprints import EvidenceError, capture_evidence, fingerprint_file
-from .state import mutate_latest_state
+from .project import state_directory
+from .state import load_state, mutate_latest_state
 
 
 _SECTION_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+_MODEL_MARKER = re.compile(r'<!-- praxis:project-model revision="([0-9]+)" -->')
 _ALLOWED_STATUSES = {"verified", "stale", "unknown"}
 _ALLOWED_STALE_REASONS = {"changed", "missing", "unsafe", "unreadable"}
 
@@ -21,6 +26,10 @@ class ProjectModelError(RuntimeError):
 
 
 class InvalidProjectModelError(ProjectModelError):
+    pass
+
+
+class ProjectModelRenderError(ProjectModelError):
     pass
 
 
@@ -264,3 +273,147 @@ def refresh_staleness(project_root: Path) -> dict[str, Any]:
         return None
 
     return mutate_latest_state(root, mutate)
+
+
+def _code_path(project_root: Path, *, create_directory: bool = False) -> Path:
+    directory = state_directory(project_root, create=create_directory)
+    path = directory / "code.md"
+    try:
+        mode = path.lstat().st_mode
+    except FileNotFoundError:
+        return path
+    if stat.S_ISLNK(mode) or not stat.S_ISREG(mode):
+        raise ProjectModelRenderError(f"Praxis code map must be a real file: {path}")
+    return path
+
+
+def _render_model_text(model: dict[str, Any]) -> str:
+    lines = [
+        "# Praxis Verified Project Model",
+        "",
+        f'<!-- praxis:project-model revision="{model["revision"]}" -->',
+        "",
+    ]
+    for section_id in sorted(model["sections"]):
+        section = model["sections"][section_id]
+        lines.extend(
+            [
+                f'## {section["title"]}',
+                f'<!-- praxis:section id="{section_id}" revision="{section["revision"]}" status="{section["status"]}" -->',
+                "",
+                section["content"].rstrip(),
+                "",
+            ]
+        )
+        if section["evidence"]:
+            lines.append("Evidence:")
+            for evidence in section["evidence"]:
+                lines.append(f'- `{evidence["path"]}` — `sha256:{evidence["sha256"]}`')
+        else:
+            lines.append("Evidence: none (unknown)")
+
+        if section["status"] == "stale":
+            lines.extend(["", "Stale reasons:"])
+            for reason in section["stale_reasons"]:
+                lines.append(f'- `{reason["path"]}` — `{reason["reason"]}`')
+        lines.extend(["", ""])
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _fsync_directory(directory: Path) -> None:
+    try:
+        descriptor = os.open(directory, os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(descriptor)
+    except OSError:
+        pass
+    finally:
+        os.close(descriptor)
+
+
+def render_project_model(project_root: Path) -> Path:
+    """Atomically rebuild `.praxis/code.md` from authoritative project-model state."""
+
+    root = Path(project_root).resolve()
+    state = load_state(root)
+    if state is None or "project_model" not in state:
+        raise InvalidProjectModelError("project model is not initialized")
+    model = get_project_model(state)
+    payload = _render_model_text(model)
+    path = _code_path(root, create_directory=True)
+    directory = path.parent
+
+    descriptor: int | None = None
+    temporary_path: Path | None = None
+    try:
+        descriptor, raw_path = tempfile.mkstemp(prefix=".code-", dir=directory)
+        temporary_path = Path(raw_path)
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
+            descriptor = None
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_path, path)
+        temporary_path = None
+        _fsync_directory(directory)
+    except (OSError, UnicodeError) as error:
+        raise ProjectModelRenderError(f"failed to render Praxis code map: {path}") from error
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        if temporary_path is not None:
+            try:
+                temporary_path.unlink()
+            except FileNotFoundError:
+                pass
+    return path
+
+
+def _rendered_model_revision(project_root: Path) -> int | None:
+    path = _code_path(project_root)
+    if not path.exists():
+        return None
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        raise ProjectModelRenderError(f"unable to read Praxis code map: {path}") from error
+    match = _MODEL_MARKER.search(text)
+    if match is None:
+        return None
+    return int(match.group(1))
+
+
+def project_model_status(project_root: Path) -> dict[str, Any]:
+    """Return read-only project-model freshness and projection status."""
+
+    root = Path(project_root).resolve()
+    state = load_state(root)
+    if state is None or "project_model" not in state:
+        return {
+            "exists": False,
+            "revision": None,
+            "sections": [],
+            "stale_sections": [],
+            "render_required": False,
+        }
+
+    model = get_project_model(state)
+    sections = [
+        {
+            "id": section_id,
+            "title": model["sections"][section_id]["title"],
+            "revision": model["sections"][section_id]["revision"],
+            "status": model["sections"][section_id]["status"],
+        }
+        for section_id in sorted(model["sections"])
+    ]
+    stale_sections = [item["id"] for item in sections if item["status"] == "stale"]
+    return {
+        "exists": True,
+        "revision": model["revision"],
+        "sections": sections,
+        "stale_sections": stale_sections,
+        "render_required": _rendered_model_revision(root) != model["revision"],
+    }
