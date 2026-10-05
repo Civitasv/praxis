@@ -25,6 +25,8 @@ Machine-owned values include:
 
 The model supplies semantic content but cannot manufacture machine revision metadata.
 
+The first materialized `decisions` collection starts at aggregate revision `0`. A newly created decision starts at decision revision `0`. Subsequent semantic changes increment the affected decision revision and aggregate decisions revision exactly once. Global `state.revision` still advances once for each durable state write. True no-ops advance none of these revisions.
+
 ## Decision classes
 
 Praxis recognizes:
@@ -51,6 +53,8 @@ Decision state must distinguish:
 
 Praxis must not rewrite provenance. AI-generated reasoning is not stored as user reasoning unless the user actually adopts it. An AI recommendation is not a selected decision. Restart/recovery/compaction/silence is not approval.
 
+`verified_constraints` is semantic content supplied by the caller, not something the decision core independently proves. The shared Tutor policy may populate it only from already verified project facts/evidence or an explicitly identified external fact source; unknown assumptions remain unknown rather than being promoted to verified constraints.
+
 ## Lifecycle
 
 Primary lifecycle:
@@ -66,12 +70,26 @@ superseded
 abandoned
 ```
 
+Allowed transitions are:
+
+```text
+open        -> selected | superseded | abandoned
+selected    -> implemented | superseded | abandoned
+implemented -> verified | superseded | abandoned
+verified    -> superseded
+superseded  -> (none)
+abandoned   -> (none)
+```
+
 Rules:
 
 - `open` means a consequential choice remains unresolved;
 - only explicit user selection or explicit risk/tradeoff acceptance advances to `selected`;
 - implementation completion advances `selected` to `implemented` only when the recorded selected decision was actually implemented;
 - verification is recorded separately and is required for `verified`;
+- a later decision may supersede an earlier decision after any non-abandoned stage, but superseding must reference the replacement decision id;
+- abandoned decisions are terminal and cannot later become selected;
+- lifecycle never moves backward;
 - recovery never changes lifecycle status;
 - invalid transitions fail without mutating state.
 
@@ -89,7 +107,7 @@ Every durable decision references an existing task id.
 
 The neutral core must support listing open decisions globally and by task.
 
-`decisions[*].status == open` is authoritative for unresolved Tutor choices. Feature-02 `pending_choices` remains compatible metadata but is not authoritative after Feature-04.
+`decisions.records[*].status == open` is authoritative for unresolved Tutor choices. Feature-02 `pending_choices` remains compatible presentation metadata but is not authoritative after Feature-04. Feature-04 does not maintain two synchronized pending-decision stores; decision queries are the source of truth.
 
 ## Blocking semantics
 
@@ -97,9 +115,9 @@ An open decision may record semantic blocked scopes. Tutor behavior blocks only 
 
 The neutral core validates and stores blocked scope labels but does not infer source-code dependency graphs from them.
 
-## Decision record minimum fields
+## Decision record schema
 
-Each decision includes at least:
+Every persisted decision has required machine/identity fields:
 
 ```text
 revision
@@ -107,6 +125,11 @@ task_id
 class
 status
 title
+```
+
+The schema also reserves provenance slots:
+
+```text
 context
 user_proposal
 verified_constraints
@@ -119,9 +142,10 @@ blocked_scopes
 implementation_result
 verification
 later_evidence
+superseded_by
 ```
 
-Optional semantic fields may be absent/null when genuinely not recorded. Missing historical content is never synthesized during rendering or recovery.
+Semantic slots may be `null` or empty when genuinely not recorded, subject to lifecycle validation. For example, `selected_decision` must be present before status can become `selected`, `implementation_result` must be present before `implemented`, and `verification` must be present before `verified`. Missing historical content is never synthesized during rendering or recovery.
 
 ## Neutral Python core
 
@@ -239,6 +263,14 @@ Recovery may summarize open decisions but cannot:
 
 Host-specific lifecycle injection remains Feature-05/06.
 
+## Testing boundary
+
+Feature-04 can prove the neutral state machine, provenance schema, rendering, JSON contracts, and that the shared Skill/reference files encode the required Tutor policy.
+
+Feature-04 cannot prove that a language model inside a real Codex or DSH lifecycle will always follow those instructions. Static Skill/fixture tests must therefore be described as policy/contract tests, not as proof of human understanding or Tutor compliance.
+
+Real host acceptance for recovery, compaction, prompt injection, and observed Tutor behavior belongs to Feature-05/06.
+
 ## Acceptance criteria
 
 ### AC-001 — provenance remains distinct
@@ -251,7 +283,7 @@ An AI proposal, recovery, silence, or compaction cannot move an open decision to
 
 ### AC-003 — lifecycle states remain honest
 
-Selected, implemented, and verified are separate durable states with validated transitions.
+Selected, implemented, and verified are separate durable states with validated forward-only transitions.
 
 ### AC-004 — same-decision conflicts are detected
 
@@ -263,7 +295,7 @@ Open decisions can be queried by task without transcript parsing, and unknown ta
 
 ### AC-006 — only affected implementation is blocked
 
-The Tutor policy allows unrelated/mechanical work to continue while an open decision blocks its declared dependent scopes.
+The encoded Tutor policy allows unrelated/mechanical work to continue while an open decision blocks its declared dependent scopes.
 
 ### AC-007 — deterministic decision history recovery
 
@@ -273,13 +305,13 @@ The Tutor policy allows unrelated/mechanical work to continue while an open deci
 
 Decision operations expose stable JSON success/error contracts with no Harness-specific dependency in the Python core.
 
-### AC-009 — Tutor does not deadlock on uncertainty
+### AC-009 — Tutor policy handles uncertainty
 
-Behavior tests cover `I don't know` and require just-enough teaching plus a meaningful tradeoff rather than repeated Socratic prompts.
+Skill/behavior contract tests cover `I don't know` and require just-enough teaching plus a meaningful tradeoff rather than repeated Socratic prompts. Real host/model compliance is deferred to Feature-05/06 acceptance.
 
 ### AC-010 — implementation becomes feedback
 
-Behavior contracts connect the selected decision to implementation and real verification results, including cases where verification contradicts the original expectation.
+The encoded Tutor policy connects the selected decision to implementation and real verification results, including cases where verification contradicts the original expectation.
 
 ## Implementation order
 
@@ -289,7 +321,7 @@ Behavior contracts connect the selected decision to implementation and real veri
 4. Deterministic `decisions.md` projection.
 5. Decision JSON CLI.
 6. Shared Praxis Skill and behavior references.
-7. Tutor behavior/scenario contract tests.
+7. Tutor policy/scenario contract tests.
 8. Repository closure (`Code.md`, `State.md`, README) and final CI.
 
 ## Non-goals
