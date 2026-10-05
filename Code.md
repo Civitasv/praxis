@@ -1,15 +1,16 @@
 # Praxis Code Map
 
-| Area | Location | Responsibility |
+| Area | Contract | Implementation |
 | --- | --- | --- |
-| Neutral Python core | `praxis/` | Shared durable state and host-neutral semantics |
-| Shared Praxis Skill | `skills/praxis/` | Tutor behavior, decision policy, recovery, repository-understanding instructions |
-| Codex adapter | `plugins/codex/` | Codex packaging, hooks, lifecycle translation |
-| DSH adapter | `plugins/dsh/` | DeepSeek Harness/Cordis lifecycle translation and distribution |
-| Architecture | `Docs/Architecture/` | Stable system boundaries and reasoning |
-| Feature specs | `Docs/Specs/` | Acceptance contracts for incremental implementation |
-| Development | `Docs/Development/` | Validation and distribution procedures |
-| Tests | `tests/`, `plugins/dsh/test/` | Executable repository and behavior contracts |
+| Neutral Python baseline | Feature-01 | `praxis/__init__.py`, `praxis/cli.py`, `praxis/__main__.py` |
+| Shared Praxis Skill | Feature-04 | `skills/praxis/` — pending |
+| Codex adapter | Feature-05 | `plugins/codex/` — pending |
+| DSH adapter seam | Feature-01 | `plugins/dsh/` |
+| DSH runtime integration | Feature-06 | `plugins/dsh/` — pending beyond seam |
+| CI | Feature-01 | `.github/workflows/ci.yml` |
+| Repository contracts | Feature-01 | `AGENTS.md`, `State.md`, `Docs/` |
+| Python tests | Feature-01 | `tests/` |
+| DSH boundary tests | Feature-01 | `plugins/dsh/test/` |
 
 ## Dependency direction
 
@@ -17,10 +18,14 @@
 shared Skill / host adapters
           |
           v
-      Praxis semantics
+     shared semantics
           |
           v
        praxis/
 ```
 
-Harness SDK dependencies terminate in their adapter. The neutral Python core must not import Codex, DeepSeek Harness, or Cordis APIs.
+Harness SDK dependencies terminate in their adapter. The neutral Python core must not import Codex, DeepSeek Harness, Cordis, or adapter package APIs.
+
+## Where to start
+
+Read `State.md` for current implementation truth. Then read the relevant `Docs/Architecture/` document and Feature spec before changing source or tests.
