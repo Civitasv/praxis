@@ -4,21 +4,146 @@ from __future__ import annotations
 
 import argparse
 from collections.abc import Sequence
+import json
+from pathlib import Path
+from typing import Any
 
 from . import __version__
+from .locking import LockTimeoutError
+from .project import UnsafeStatePathError, discover_project_root
+from .state import (
+    InvalidStateError,
+    MalformedStateError,
+    PraxisStateError,
+    RevisionConflictError,
+    StateNotInitializedError,
+    StateWriteError,
+    UnsupportedFormatError,
+    enable_state,
+    load_state,
+    pause_state,
+)
+from .tasks import InvalidTaskError, create_task, update_task
+
+
+def _add_cwd(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--cwd", required=True)
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="praxis")
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"Praxis {__version__}",
-    )
+    parser.add_argument("--version", action="version", version=f"Praxis {__version__}")
+    subparsers = parser.add_subparsers(dest="command")
+
+    status = subparsers.add_parser("status")
+    _add_cwd(status)
+
+    enable = subparsers.add_parser("enable")
+    _add_cwd(enable)
+    enable.add_argument("--expected-revision", type=int)
+
+    pause = subparsers.add_parser("pause")
+    _add_cwd(pause)
+    pause.add_argument("--expected-revision", type=int, required=True)
+
+    task_create = subparsers.add_parser("task-create")
+    _add_cwd(task_create)
+    task_create.add_argument("--expected-revision", type=int, required=True)
+    task_create.add_argument("--host", required=True)
+    task_create.add_argument("--conversation-id")
+    task_create.add_argument("--title")
+
+    task_update = subparsers.add_parser("task-update")
+    _add_cwd(task_update)
+    task_update.add_argument("--expected-revision", type=int, required=True)
+    task_update.add_argument("--task-id", required=True)
+    task_update.add_argument("--stage")
+    task_update.add_argument("--status")
+    task_update.add_argument("--pending-choice", nargs="*")
+    task_update.add_argument("--title")
     return parser
+
+
+def _success(project_root: Path, state: dict[str, Any] | None, **extra: Any) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "ok": True,
+        "project_root": str(project_root),
+        "active": bool(state is not None and state["enabled"]),
+        "state": state,
+    }
+    payload.update(extra)
+    return payload
+
+
+def _error_code(error: Exception) -> str:
+    if isinstance(error, RevisionConflictError):
+        return "revision_conflict"
+    if isinstance(error, InvalidTaskError):
+        return "invalid_task"
+    if isinstance(error, MalformedStateError):
+        return "malformed_state"
+    if isinstance(error, UnsupportedFormatError):
+        return "unsupported_format"
+    if isinstance(error, InvalidStateError):
+        return "invalid_state"
+    if isinstance(error, StateNotInitializedError):
+        return "state_not_initialized"
+    if isinstance(error, StateWriteError):
+        return "state_write_failed"
+    if isinstance(error, UnsafeStatePathError):
+        return "unsafe_state_path"
+    if isinstance(error, LockTimeoutError):
+        return "lock_timeout"
+    return "invalid_request"
+
+
+def _emit(payload: dict[str, Any]) -> None:
+    print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+
+
+def _run_command(args: argparse.Namespace) -> dict[str, Any]:
+    project_root = discover_project_root(args.cwd)
+    if args.command == "status":
+        return _success(project_root, load_state(project_root))
+    if args.command == "enable":
+        state = enable_state(project_root, expected_revision=args.expected_revision)
+        return _success(project_root, state)
+    if args.command == "pause":
+        state = pause_state(project_root, args.expected_revision)
+        return _success(project_root, state)
+    if args.command == "task-create":
+        task_id, state = create_task(
+            project_root,
+            args.expected_revision,
+            host=args.host,
+            conversation_id=args.conversation_id,
+            title=args.title,
+        )
+        return _success(project_root, state, task_id=task_id)
+    if args.command == "task-update":
+        state = update_task(
+            project_root,
+            args.expected_revision,
+            args.task_id,
+            stage=args.stage,
+            status=args.status,
+            pending_choices=args.pending_choice,
+            title=args.title,
+        )
+        return _success(project_root, state, task_id=args.task_id)
+    raise ValueError("a Praxis command is required")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
-    parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.command is None:
+        parser.print_help()
+        return 0
+    try:
+        payload = _run_command(args)
+    except (PraxisStateError, UnsafeStatePathError, LockTimeoutError, ValueError) as error:
+        _emit({"ok": False, "error": {"code": _error_code(error), "message": str(error)}})
+        return 2
+    _emit(payload)
     return 0
