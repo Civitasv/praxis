@@ -142,7 +142,7 @@ blocked_scopes
 implementation_result
 verification
 later_evidence
-superseded_by
+superseding_decision_id
 ```
 
 Semantic slots may be `null` or empty when genuinely not recorded, subject to lifecycle validation. For example, `selected_decision` must be present before status can become `selected`, `implementation_result` must be present before `implemented`, and `verification` must be present before `verified`. Missing historical content is never synthesized during rendering or recovery.
@@ -317,7 +317,7 @@ The encoded Tutor policy connects the selected decision to implementation and re
 
 1. Decision schema and provenance validation.
 2. Decision-level CAS and lifecycle transitions.
-3. Task linkage and unresolved decision queries.
+3. Task linkage and unresolved-decision queries.
 4. Deterministic `decisions.md` projection.
 5. Decision JSON CLI.
 6. Shared Praxis Skill and behavior references.
