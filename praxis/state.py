@@ -131,6 +131,59 @@ def _validate_string_list(name: str, value: object) -> None:
         raise InvalidStateError(f"{name} must be a list of non-empty strings")
 
 
+def _validate_decision_provenance_order(decision_id: object, record: dict[str, Any]) -> None:
+    selected = record.get("selected_decision")
+    implementation = record.get("implementation_result")
+    verification = record.get("verification")
+    user_reasoning = record.get("user_reasoning")
+    accepted_tradeoffs = record.get("accepted_tradeoffs")
+
+    if selected is None:
+        if user_reasoning is not None or accepted_tradeoffs:
+            raise InvalidStateError(
+                f"decision {decision_id} cannot record user selection reasoning before selection"
+            )
+        if implementation is not None or verification is not None:
+            raise InvalidStateError(
+                f"decision {decision_id} cannot record implementation or verification before selection"
+            )
+    if implementation is None and verification is not None:
+        raise InvalidStateError(
+            f"decision {decision_id} cannot record verification before implementation"
+        )
+
+
+def _validate_decision_lifecycle(decision_id: object, record: dict[str, Any]) -> None:
+    status = record["status"]
+    selected = record.get("selected_decision")
+    implementation = record.get("implementation_result")
+    verification = record.get("verification")
+    superseding = record.get("superseding_decision_id")
+
+    _validate_decision_provenance_order(decision_id, record)
+
+    if status == "open":
+        if selected is not None or implementation is not None or verification is not None:
+            raise InvalidStateError(f"decision {decision_id} open state contains later lifecycle data")
+    elif status == "selected":
+        if selected is None or implementation is not None or verification is not None:
+            raise InvalidStateError(f"decision {decision_id} selected state is inconsistent")
+    elif status == "implemented":
+        if selected is None or implementation is None or verification is not None:
+            raise InvalidStateError(f"decision {decision_id} implemented state is inconsistent")
+    elif status == "verified":
+        if selected is None or implementation is None or verification is None:
+            raise InvalidStateError(f"decision {decision_id} verified state is inconsistent")
+
+    if status == "superseded":
+        if not _validate_decision_id(superseding) or superseding == decision_id:
+            raise InvalidStateError(f"decision {decision_id} has invalid superseding decision id")
+    elif superseding is not None:
+        raise InvalidStateError(
+            f"decision {decision_id} records a superseding decision while status is {status}"
+        )
+
+
 def _validate_decision_record(decision_id: object, record: object, tasks: dict[str, Any]) -> None:
     if not _validate_decision_id(decision_id):
         raise InvalidStateError(f"invalid decision id: {decision_id!r}")
@@ -160,6 +213,7 @@ def _validate_decision_record(decision_id: object, record: object, tasks: dict[s
         value = record.get(field)
         if value is not None and (not isinstance(value, str) or not value.strip()):
             raise InvalidStateError(f"decision {decision_id} {field} must be non-empty when recorded")
+    _validate_decision_lifecycle(decision_id, record)
 
 
 def _validate_decisions(value: object, tasks: dict[str, Any]) -> None:
@@ -173,6 +227,13 @@ def _validate_decisions(value: object, tasks: dict[str, Any]) -> None:
         raise InvalidStateError("decisions records must be an object")
     for decision_id, record in records.items():
         _validate_decision_record(decision_id, record, tasks)
+    for decision_id, record in records.items():
+        if record.get("status") == "superseded":
+            replacement = record.get("superseding_decision_id")
+            if replacement not in records:
+                raise InvalidStateError(
+                    f"decision {decision_id} references unknown superseding decision"
+                )
 
 
 def _validate_state(value: object) -> dict[str, Any]:
