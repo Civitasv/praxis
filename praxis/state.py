@@ -24,6 +24,24 @@ TASK_STAGES = {
     "blocked",
 }
 TASK_STATUSES = {"active", "blocked", "complete"}
+DECISION_CLASSES = {"engineering", "architectural"}
+DECISION_STATUSES = {"open", "selected", "implemented", "verified", "superseded", "abandoned"}
+DECISION_LIST_FIELDS = {
+    "verified_constraints",
+    "alternatives",
+    "accepted_tradeoffs",
+    "blocked_scopes",
+    "later_evidence",
+}
+DECISION_OPTIONAL_TEXT_FIELDS = {
+    "user_proposal",
+    "praxis_challenge",
+    "selected_decision",
+    "user_reasoning",
+    "implementation_result",
+    "verification",
+    "superseding_decision_id",
+}
 
 
 class PraxisStateError(RuntimeError):
@@ -72,6 +90,13 @@ def _validate_task_id(task_id: object) -> bool:
     return bool(suffix) and all(char in "0123456789abcdef" for char in suffix)
 
 
+def _validate_decision_id(decision_id: object) -> bool:
+    if not isinstance(decision_id, str) or not decision_id.startswith("decision_"):
+        return False
+    suffix = decision_id[9:]
+    return bool(suffix) and all(char in "0123456789abcdef" for char in suffix)
+
+
 def _validate_task_record(task_id: object, task: object) -> None:
     if not _validate_task_id(task_id):
         raise InvalidStateError(f"invalid task id: {task_id!r}")
@@ -99,6 +124,57 @@ def _validate_task_record(task_id: object, task: object) -> None:
             raise InvalidStateError(f"task {task_id} {field} must be a non-empty string")
 
 
+def _validate_string_list(name: str, value: object) -> None:
+    if not isinstance(value, list) or any(
+        not isinstance(item, str) or not item.strip() for item in value
+    ):
+        raise InvalidStateError(f"{name} must be a list of non-empty strings")
+
+
+def _validate_decision_record(decision_id: object, record: object, tasks: dict[str, Any]) -> None:
+    if not _validate_decision_id(decision_id):
+        raise InvalidStateError(f"invalid decision id: {decision_id!r}")
+    if not isinstance(record, dict):
+        raise InvalidStateError(f"decision {decision_id} must be an object")
+    revision = record.get("revision")
+    if not _is_int(revision) or revision < 0:
+        raise InvalidStateError(f"decision {decision_id} revision must be non-negative")
+    task_id = record.get("task_id")
+    if not isinstance(task_id, str) or task_id not in tasks:
+        raise InvalidStateError(f"decision {decision_id} references unknown task")
+    if record.get("class") not in DECISION_CLASSES:
+        raise InvalidStateError(f"decision {decision_id} has invalid class")
+    if record.get("status") not in DECISION_STATUSES:
+        raise InvalidStateError(f"decision {decision_id} has invalid status")
+    for field in ("title", "context"):
+        value = record.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise InvalidStateError(f"decision {decision_id} {field} must be non-empty")
+    for field in DECISION_LIST_FIELDS:
+        _validate_string_list(f"decision {decision_id} {field}", record.get(field))
+    for field in DECISION_OPTIONAL_TEXT_FIELDS:
+        if field not in record:
+            if field == "superseding_decision_id":
+                continue
+            raise InvalidStateError(f"decision {decision_id} missing {field}")
+        value = record.get(field)
+        if value is not None and (not isinstance(value, str) or not value.strip()):
+            raise InvalidStateError(f"decision {decision_id} {field} must be non-empty when recorded")
+
+
+def _validate_decisions(value: object, tasks: dict[str, Any]) -> None:
+    if not isinstance(value, dict):
+        raise InvalidStateError("decisions must be an object")
+    revision = value.get("revision")
+    if not _is_int(revision) or revision < 0:
+        raise InvalidStateError("decisions revision must be non-negative")
+    records = value.get("records")
+    if not isinstance(records, dict):
+        raise InvalidStateError("decisions records must be an object")
+    for decision_id, record in records.items():
+        _validate_decision_record(decision_id, record, tasks)
+
+
 def _validate_state(value: object) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise InvalidStateError("state must be a JSON object")
@@ -118,6 +194,8 @@ def _validate_state(value: object) -> dict[str, Any]:
         raise InvalidStateError("tasks must be an object")
     for task_id, task in value["tasks"].items():
         _validate_task_record(task_id, task)
+    if "decisions" in value:
+        _validate_decisions(value["decisions"], value["tasks"])
     return value
 
 
