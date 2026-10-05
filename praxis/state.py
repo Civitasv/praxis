@@ -14,6 +14,16 @@ from .project import state_directory, state_file
 
 
 FORMAT_VERSION = 1
+TASK_STAGES = {
+    "understanding",
+    "design",
+    "awaiting_decision",
+    "implementation",
+    "verification",
+    "complete",
+    "blocked",
+}
+TASK_STATUSES = {"active", "blocked", "complete"}
 
 
 class PraxisStateError(RuntimeError):
@@ -51,6 +61,40 @@ def _is_int(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
+def _validate_task_id(task_id: object) -> bool:
+    if not isinstance(task_id, str) or not task_id.startswith("task_"):
+        return False
+    suffix = task_id[5:]
+    return bool(suffix) and all(char in "0123456789abcdef" for char in suffix)
+
+
+def _validate_task_record(task_id: object, task: object) -> None:
+    if not _validate_task_id(task_id):
+        raise InvalidStateError(f"invalid task id: {task_id!r}")
+    if not isinstance(task, dict):
+        raise InvalidStateError(f"task {task_id} must be an object")
+
+    host = task.get("host")
+    if not isinstance(host, str) or not host.strip():
+        raise InvalidStateError(f"task {task_id} host must be a non-empty string")
+    if task.get("stage") not in TASK_STAGES:
+        raise InvalidStateError(f"task {task_id} has invalid stage")
+    if task.get("status") not in TASK_STATUSES:
+        raise InvalidStateError(f"task {task_id} has invalid status")
+
+    choices = task.get("pending_choices")
+    if not isinstance(choices, list) or any(
+        not isinstance(choice, str) or not choice for choice in choices
+    ):
+        raise InvalidStateError(f"task {task_id} pending_choices must be strings")
+
+    for field in ("conversation_id", "title"):
+        if field in task and (
+            not isinstance(task[field], str) or not task[field].strip()
+        ):
+            raise InvalidStateError(f"task {task_id} {field} must be a non-empty string")
+
+
 def _validate_state(value: object) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise InvalidStateError("state must be a JSON object")
@@ -68,6 +112,8 @@ def _validate_state(value: object) -> dict[str, Any]:
         raise InvalidStateError("enabled must be a boolean")
     if not isinstance(value.get("tasks"), dict):
         raise InvalidStateError("tasks must be an object")
+    for task_id, task in value["tasks"].items():
+        _validate_task_record(task_id, task)
     return value
 
 

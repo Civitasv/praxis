@@ -7,19 +7,11 @@ from pathlib import Path
 import secrets
 from typing import Any
 
-from .state import InvalidStateError, mutate_state
+from .state import InvalidStateError, TASK_STAGES, TASK_STATUSES, mutate_state
 
 
-ALLOWED_STAGES = {
-    "understanding",
-    "design",
-    "awaiting_decision",
-    "implementation",
-    "verification",
-    "complete",
-    "blocked",
-}
-ALLOWED_STATUSES = {"active", "blocked", "complete"}
+ALLOWED_STAGES = TASK_STAGES
+ALLOWED_STATUSES = TASK_STATUSES
 
 
 class InvalidTaskError(InvalidStateError):
@@ -37,7 +29,9 @@ def _validate_optional_string(name: str, value: str | None) -> None:
 
 
 def _validate_pending_choices(values: list[str]) -> None:
-    if not isinstance(values, list) or any(not isinstance(value, str) or not value for value in values):
+    if not isinstance(values, list) or any(
+        not isinstance(value, str) or not value for value in values
+    ):
         raise InvalidTaskError("pending_choices must be a list of non-empty strings")
 
 

@@ -128,6 +128,13 @@ class CliStateTests(CliBaselineTests):
                 ["storage", "permissions"],
             )
 
+    def test_missing_required_state_argument_returns_json_error(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result, payload = self.run_json("pause", "--cwd", tmp)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(payload["ok"])
+            self.assertEqual(payload["error"]["code"], "invalid_request")
+
     def test_corrupt_state_returns_stable_error_json(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             directory = Path(tmp) / ".praxis"

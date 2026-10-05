@@ -26,12 +26,21 @@ from .state import (
 from .tasks import InvalidTaskError, create_task, update_task
 
 
+class CliUsageError(ValueError):
+    pass
+
+
+class JsonArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        raise CliUsageError(message)
+
+
 def _add_cwd(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--cwd", required=True)
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="praxis")
+    parser = JsonArgumentParser(prog="praxis")
     parser.add_argument("--version", action="version", version=f"Praxis {__version__}")
     subparsers = parser.add_subparsers(dest="command")
 
@@ -131,16 +140,16 @@ def _run_command(args: argparse.Namespace) -> dict[str, Any]:
             title=args.title,
         )
         return _success(project_root, state, task_id=args.task_id)
-    raise ValueError("a Praxis command is required")
+    raise CliUsageError("a Praxis command is required")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
-    args = parser.parse_args(argv)
-    if args.command is None:
-        parser.print_help()
-        return 0
     try:
+        args = parser.parse_args(argv)
+        if args.command is None:
+            parser.print_help()
+            return 0
         payload = _run_command(args)
     except (PraxisStateError, UnsafeStatePathError, LockTimeoutError, ValueError) as error:
         _emit({"ok": False, "error": {"code": _error_code(error), "message": str(error)}})
