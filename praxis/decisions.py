@@ -5,13 +5,14 @@ from __future__ import annotations
 import copy
 from pathlib import Path
 import secrets
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
-from .state import InvalidStateError, mutate_latest_state
+from .state import mutate_latest_state
 
 
 DURABLE_DECISION_CLASSES = {"engineering", "architectural"}
 DECISION_STATUSES = {"open", "selected", "implemented", "verified", "superseded", "abandoned"}
+TERMINAL_DECISION_STATUSES = {"verified", "superseded", "abandoned"}
 
 
 class DecisionError(RuntimeError):
@@ -35,6 +36,10 @@ class UnknownDecisionError(DecisionError):
 
 
 class InvalidDecisionTransitionError(DecisionError):
+    pass
+
+
+class DecisionRenderError(DecisionError):
     pass
 
 
@@ -136,3 +141,151 @@ def create_decision(
         return None
 
     return decision_id, mutate_latest_state(project_root, mutate)
+
+
+def _mutate_decision(
+    project_root: Path,
+    decision_id: str,
+    expected_decision_revision: int,
+    editor: Callable[[dict[str, Any], dict[str, Any]], bool],
+) -> dict[str, Any]:
+    def mutate(state: dict[str, Any]) -> None:
+        aggregate = state.get("decisions")
+        if not isinstance(aggregate, dict):
+            raise UnknownDecisionError(f"unknown decision id: {decision_id}")
+        record = aggregate["records"].get(decision_id)
+        if not isinstance(record, dict):
+            raise UnknownDecisionError(f"unknown decision id: {decision_id}")
+        actual = record["revision"]
+        if expected_decision_revision != actual:
+            raise DecisionConflictError(decision_id, expected_decision_revision, actual)
+        changed = editor(record, aggregate)
+        if not changed:
+            return None
+        record["revision"] = actual + 1
+        aggregate["revision"] += 1
+        return None
+
+    return mutate_latest_state(project_root, mutate)
+
+
+def _require_status(record: dict[str, Any], decision_id: str, required: str) -> None:
+    if record["status"] != required:
+        raise InvalidDecisionTransitionError(
+            f"decision {decision_id} must be {required}, found {record['status']}"
+        )
+
+
+def select_decision(
+    project_root: Path,
+    decision_id: str,
+    expected_decision_revision: int,
+    selected_decision: str,
+    *,
+    user_reasoning: str | None = None,
+    accepted_tradeoffs: Iterable[str] | None = None,
+) -> dict[str, Any]:
+    selected_decision = _nonempty("selected_decision", selected_decision)
+    user_reasoning = _optional_text("user_reasoning", user_reasoning)
+    accepted = _strings("accepted_tradeoffs", accepted_tradeoffs)
+
+    def edit(record: dict[str, Any], aggregate: dict[str, Any]) -> bool:
+        _require_status(record, decision_id, "open")
+        record["selected_decision"] = selected_decision
+        record["user_reasoning"] = user_reasoning
+        record["accepted_tradeoffs"] = accepted
+        record["status"] = "selected"
+        return True
+
+    return _mutate_decision(project_root, decision_id, expected_decision_revision, edit)
+
+
+def record_implementation(
+    project_root: Path,
+    decision_id: str,
+    expected_decision_revision: int,
+    implementation_result: str,
+) -> dict[str, Any]:
+    implementation_result = _nonempty("implementation_result", implementation_result)
+
+    def edit(record: dict[str, Any], aggregate: dict[str, Any]) -> bool:
+        _require_status(record, decision_id, "selected")
+        record["implementation_result"] = implementation_result
+        record["status"] = "implemented"
+        return True
+
+    return _mutate_decision(project_root, decision_id, expected_decision_revision, edit)
+
+
+def record_verification(
+    project_root: Path,
+    decision_id: str,
+    expected_decision_revision: int,
+    verification: str,
+) -> dict[str, Any]:
+    verification = _nonempty("verification", verification)
+
+    def edit(record: dict[str, Any], aggregate: dict[str, Any]) -> bool:
+        _require_status(record, decision_id, "implemented")
+        record["verification"] = verification
+        record["status"] = "verified"
+        return True
+
+    return _mutate_decision(project_root, decision_id, expected_decision_revision, edit)
+
+
+def supersede_decision(
+    project_root: Path,
+    decision_id: str,
+    expected_decision_revision: int,
+    superseding_decision_id: str,
+) -> dict[str, Any]:
+    superseding_decision_id = _nonempty("superseding_decision_id", superseding_decision_id)
+    if superseding_decision_id == decision_id:
+        raise InvalidDecisionError("a decision cannot supersede itself")
+
+    def edit(record: dict[str, Any], aggregate: dict[str, Any]) -> bool:
+        if record["status"] not in {"open", "selected", "implemented"}:
+            raise InvalidDecisionTransitionError(
+                f"decision {decision_id} cannot be superseded from {record['status']}"
+            )
+        if superseding_decision_id not in aggregate["records"]:
+            raise UnknownDecisionError(f"unknown decision id: {superseding_decision_id}")
+        record["status"] = "superseded"
+        record["superseding_decision_id"] = superseding_decision_id
+        return True
+
+    return _mutate_decision(project_root, decision_id, expected_decision_revision, edit)
+
+
+def abandon_decision(
+    project_root: Path,
+    decision_id: str,
+    expected_decision_revision: int,
+) -> dict[str, Any]:
+    def edit(record: dict[str, Any], aggregate: dict[str, Any]) -> bool:
+        if record["status"] not in {"open", "selected", "implemented"}:
+            raise InvalidDecisionTransitionError(
+                f"decision {decision_id} cannot be abandoned from {record['status']}"
+            )
+        record["status"] = "abandoned"
+        return True
+
+    return _mutate_decision(project_root, decision_id, expected_decision_revision, edit)
+
+
+def add_later_evidence(
+    project_root: Path,
+    decision_id: str,
+    expected_decision_revision: int,
+    evidence: str,
+) -> dict[str, Any]:
+    evidence = _nonempty("evidence", evidence)
+
+    def edit(record: dict[str, Any], aggregate: dict[str, Any]) -> bool:
+        if evidence in record["later_evidence"]:
+            return False
+        record["later_evidence"].append(evidence)
+        return True
+
+    return _mutate_decision(project_root, decision_id, expected_decision_revision, edit)
