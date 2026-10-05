@@ -9,8 +9,21 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
+from .fingerprints import EvidenceError
 from .locking import LockTimeoutError
 from .project import UnsafeStatePathError, discover_project_root
+from .project_map import (
+    InvalidProjectModelError,
+    ProjectModelError,
+    ProjectModelRenderError,
+    SectionConflictError,
+    UnknownSectionError,
+    project_model_status,
+    refresh_staleness,
+    remove_section,
+    render_project_model,
+    upsert_section,
+)
 from .state import (
     InvalidStateError,
     MalformedStateError,
@@ -71,6 +84,28 @@ def build_parser() -> argparse.ArgumentParser:
     task_update.add_argument("--status")
     task_update.add_argument("--pending-choice", nargs="*")
     task_update.add_argument("--title")
+
+    map_status = subparsers.add_parser("map-status")
+    _add_cwd(map_status)
+
+    map_upsert = subparsers.add_parser("map-upsert")
+    _add_cwd(map_upsert)
+    map_upsert.add_argument("--section-id", required=True)
+    map_upsert.add_argument("--title", required=True)
+    map_upsert.add_argument("--content", required=True)
+    map_upsert.add_argument("--evidence", nargs="*", default=[])
+    map_upsert.add_argument("--expected-section-revision", type=int)
+
+    map_remove = subparsers.add_parser("map-remove")
+    _add_cwd(map_remove)
+    map_remove.add_argument("--section-id", required=True)
+    map_remove.add_argument("--expected-section-revision", type=int, required=True)
+
+    map_check = subparsers.add_parser("map-check")
+    _add_cwd(map_check)
+
+    map_render = subparsers.add_parser("map-render")
+    _add_cwd(map_render)
     return parser
 
 
@@ -88,6 +123,18 @@ def _success(project_root: Path, state: dict[str, Any] | None, **extra: Any) -> 
 def _error_code(error: Exception) -> str:
     if isinstance(error, RevisionConflictError):
         return "revision_conflict"
+    if isinstance(error, SectionConflictError):
+        return "section_conflict"
+    if isinstance(error, UnknownSectionError):
+        return "unknown_section"
+    if isinstance(error, ProjectModelRenderError):
+        return "project_model_render_failed"
+    if isinstance(error, InvalidProjectModelError):
+        return "invalid_project_model"
+    if isinstance(error, EvidenceError):
+        return "invalid_evidence"
+    if isinstance(error, ProjectModelError):
+        return "invalid_project_model"
     if isinstance(error, InvalidTaskError):
         return "invalid_task"
     if isinstance(error, MalformedStateError):
@@ -143,6 +190,38 @@ def _run_command(args: argparse.Namespace) -> dict[str, Any]:
             title=args.title,
         )
         return _success(project_root, state, task_id=args.task_id)
+    if args.command == "map-status":
+        state = load_state(project_root)
+        return _success(project_root, state, project_model=project_model_status(project_root))
+    if args.command == "map-upsert":
+        state = upsert_section(
+            project_root,
+            args.section_id,
+            args.title,
+            args.content,
+            args.evidence,
+            expected_section_revision=args.expected_section_revision,
+        )
+        return _success(project_root, state, project_model=project_model_status(project_root))
+    if args.command == "map-remove":
+        state = remove_section(
+            project_root,
+            args.section_id,
+            args.expected_section_revision,
+        )
+        return _success(project_root, state, project_model=project_model_status(project_root))
+    if args.command == "map-check":
+        state = refresh_staleness(project_root)
+        return _success(project_root, state, project_model=project_model_status(project_root))
+    if args.command == "map-render":
+        code_path = render_project_model(project_root)
+        state = load_state(project_root)
+        return _success(
+            project_root,
+            state,
+            project_model=project_model_status(project_root),
+            code_path=str(code_path),
+        )
     raise CliUsageError("a Praxis command is required")
 
 
@@ -154,7 +233,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             parser.print_help()
             return 0
         payload = _run_command(args)
-    except (PraxisStateError, UnsafeStatePathError, LockTimeoutError, ValueError) as error:
+    except (
+        PraxisStateError,
+        ProjectModelError,
+        EvidenceError,
+        UnsafeStatePathError,
+        LockTimeoutError,
+        ValueError,
+    ) as error:
         _emit({"ok": False, "error": {"code": _error_code(error), "message": str(error)}})
         return 2
     _emit(payload)
