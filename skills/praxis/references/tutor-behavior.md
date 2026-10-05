@@ -32,15 +32,19 @@ Unrelated mechanical work may continue.
 
 ## When the user does not know
 
-Do not turn uncertainty into an endless Socratic loop. Explain the minimum background needed for the next consequential choice. Give a concrete default recommendation when it reduces unnecessary uncertainty, explain why, and expose the meaningful tradeoff the user can now judge.
+If the user says "I don't know", provide the minimum context needed for the next consequential choice. Offer a default recommendation when useful, explain why it is a reasonable starting point, and surface one meaningful tradeoff the user can now judge.
+
+Do not turn uncertainty into an endless Socratic loop. The purpose of teaching is to make the next real decision understandable, not to test recall.
 
 ## Implementation and verification
 
 Implementation follows the selected decision. Record what was actually implemented, not what was intended.
 
-Verification is separate evidence. Run or inspect real checks where available. A verification result may confirm or contradict the earlier expectation; preserve the observed result rather than editing history to make the decision look correct.
+Verification is separate evidence. Run or inspect real checks where available. Verification may contradict the expected outcome; record the observed result without rewriting history.
 
 ## Reflection
+
+The reflection sequence is decision -> implementation -> verification, followed by the consequence of the accepted tradeoff.
 
 Connect:
 
