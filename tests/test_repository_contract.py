@@ -46,10 +46,23 @@ class RepositoryContractTests(unittest.TestCase):
             with self.subTest(expected=expected):
                 self.assertIn(expected, text)
 
-    def test_state_marks_foundation_in_progress_and_later_features_pending(self) -> None:
+    def test_state_records_completed_foundation_and_later_features_pending(self) -> None:
         text = self.read("State.md")
-        self.assertIn("Feature-01: In progress", text)
-        self.assertIn("Repository contracts: Implemented", text)
+        self.assertIn("Feature-01: Implemented", text)
+        for capability in (
+            "Repository contracts",
+            "Python neutral-core executable baseline",
+            "DSH TypeScript boundary",
+            "GitHub Actions CI",
+        ):
+            self.assertIn(f"{capability}: Implemented", text)
+        for command in (
+            "python -m unittest discover -s tests -v",
+            "python -m compileall -q praxis tests",
+            "pnpm typecheck",
+            "pnpm test:dsh",
+        ):
+            self.assertIn(command, text)
         for feature in range(2, 7):
             self.assertIn(f"Feature-{feature:02d}: Pending", text)
 
