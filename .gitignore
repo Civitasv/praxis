@@ -1,0 +1,15 @@
+# Generated Praxis project state
+.praxis/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Node
+node_modules/
+
+# Build/test output
+.coverage
+.pytest_cache/
+dist/
