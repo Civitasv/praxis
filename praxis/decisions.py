@@ -82,6 +82,30 @@ def get_decision(state: dict[str, Any], decision_id: str) -> dict[str, Any]:
     return record
 
 
+def list_decisions(state: dict[str, Any], *, task_id: str | None = None) -> dict[str, Any]:
+    records = get_decisions(state)["records"]
+    return {
+        decision_id: copy.deepcopy(record)
+        for decision_id, record in records.items()
+        if task_id is None or record.get("task_id") == task_id
+    }
+
+
+def list_open_decisions(state: dict[str, Any], *, task_id: str | None = None) -> dict[str, Any]:
+    return {
+        decision_id: record
+        for decision_id, record in list_decisions(state, task_id=task_id).items()
+        if record.get("status") == "open"
+    }
+
+
+def decision_blocked_scopes(state: dict[str, Any], *, task_id: str | None = None) -> list[str]:
+    scopes: set[str] = set()
+    for record in list_open_decisions(state, task_id=task_id).values():
+        scopes.update(record.get("blocked_scopes", []))
+    return sorted(scopes)
+
+
 def create_decision(
     project_root: Path,
     task_id: str,
