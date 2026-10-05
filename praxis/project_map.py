@@ -231,7 +231,7 @@ def remove_section(
 
 
 def refresh_staleness(project_root: Path) -> dict[str, Any]:
-    """Recompute source fingerprints and mark only affected sections stale."""
+    """Recompute evidence freshness without auto-clearing an already stale section."""
 
     root = Path(project_root).resolve()
 
@@ -260,6 +260,9 @@ def refresh_staleness(project_root: Path) -> dict[str, Any]:
                     reasons.append({"path": path, "reason": "changed"})
 
             reasons.sort(key=lambda item: (item["path"], item["reason"]))
+            if section["status"] == "stale" and not reasons:
+                continue
+
             status = "stale" if reasons else "verified"
             if section["status"] != status or section["stale_reasons"] != reasons:
                 section["status"] = status
