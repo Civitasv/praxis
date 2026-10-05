@@ -17,7 +17,6 @@ from .state import load_state, mutate_latest_state
 
 DURABLE_DECISION_CLASSES = {"engineering", "architectural"}
 DECISION_STATUSES = {"open", "selected", "implemented", "verified", "superseded", "abandoned"}
-TERMINAL_DECISION_STATUSES = {"verified", "superseded", "abandoned"}
 _DECISIONS_MARKER = re.compile(r'<!-- praxis:decisions revision="([0-9]+)" -->')
 
 
@@ -26,6 +25,10 @@ class DecisionError(RuntimeError):
 
 
 class InvalidDecisionError(DecisionError):
+    pass
+
+
+class UnknownTaskError(InvalidDecisionError):
     pass
 
 
@@ -139,7 +142,7 @@ def create_decision(
     def mutate(state: dict[str, Any]) -> None:
         tasks = state.get("tasks")
         if not isinstance(tasks, dict) or task_id not in tasks:
-            raise InvalidDecisionError(f"unknown task id: {task_id}")
+            raise UnknownTaskError(f"unknown task id: {task_id}")
         existing = state.get("decisions")
         if existing is None:
             aggregate: dict[str, Any] = {"revision": 0, "records": {}}
@@ -275,7 +278,7 @@ def supersede_decision(
         raise InvalidDecisionError("a decision cannot supersede itself")
 
     def edit(record: dict[str, Any], aggregate: dict[str, Any]) -> bool:
-        if record["status"] not in {"open", "selected", "implemented"}:
+        if record["status"] not in {"open", "selected", "implemented", "verified"}:
             raise InvalidDecisionTransitionError(
                 f"decision {decision_id} cannot be superseded from {record['status']}"
             )
