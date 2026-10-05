@@ -1,0 +1,422 @@
+"""Verified, section-concurrent project model state for Praxis."""
+
+from __future__ import annotations
+
+import copy
+import os
+import re
+from pathlib import Path
+import stat
+import tempfile
+from typing import Any, Iterable
+
+from .fingerprints import EvidenceError, capture_evidence, fingerprint_file
+from .project import state_directory
+from .state import load_state, mutate_latest_state
+
+
+_SECTION_ID = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+_MODEL_MARKER = re.compile(r'<!-- praxis:project-model revision="([0-9]+)" -->')
+_ALLOWED_STATUSES = {"verified", "stale", "unknown"}
+_ALLOWED_STALE_REASONS = {"changed", "missing", "unsafe", "unreadable"}
+
+
+class ProjectModelError(RuntimeError):
+    """Base class for neutral verified-project-model errors."""
+
+
+class InvalidProjectModelError(ProjectModelError):
+    pass
+
+
+class ProjectModelRenderError(ProjectModelError):
+    pass
+
+
+class SectionConflictError(ProjectModelError):
+    def __init__(self, section_id: str, expected: int | None, actual: int | None) -> None:
+        self.section_id = section_id
+        self.expected = expected
+        self.actual = actual
+        super().__init__(
+            f"project-model section conflict for {section_id}: expected {expected}, actual {actual}"
+        )
+
+
+class UnknownSectionError(ProjectModelError):
+    pass
+
+
+def _is_int(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
+def _validate_section_id(section_id: object) -> str:
+    if not isinstance(section_id, str) or _SECTION_ID.fullmatch(section_id) is None:
+        raise InvalidProjectModelError(f"invalid project-model section id: {section_id!r}")
+    return section_id
+
+
+def _validate_nonempty(name: str, value: object) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise InvalidProjectModelError(f"{name} must be a non-empty string")
+    return value
+
+
+def _validate_evidence(evidence: object) -> None:
+    if not isinstance(evidence, list):
+        raise InvalidProjectModelError("section evidence must be a list")
+    seen: set[str] = set()
+    previous: str | None = None
+    for item in evidence:
+        if not isinstance(item, dict):
+            raise InvalidProjectModelError("evidence entries must be objects")
+        path = item.get("path")
+        digest = item.get("sha256")
+        if not isinstance(path, str) or not path or path in seen:
+            raise InvalidProjectModelError("evidence paths must be unique non-empty strings")
+        if previous is not None and path < previous:
+            raise InvalidProjectModelError("evidence paths must be sorted")
+        if (
+            not isinstance(digest, str)
+            or len(digest) != 64
+            or any(char not in "0123456789abcdef" for char in digest)
+        ):
+            raise InvalidProjectModelError(f"invalid evidence sha256 for {path}")
+        seen.add(path)
+        previous = path
+
+
+def _validate_stale_reasons(reasons: object) -> None:
+    if not isinstance(reasons, list):
+        raise InvalidProjectModelError("stale_reasons must be a list")
+    previous: tuple[str, str] | None = None
+    for reason in reasons:
+        if not isinstance(reason, dict):
+            raise InvalidProjectModelError("stale reasons must be objects")
+        path = reason.get("path")
+        kind = reason.get("reason")
+        if not isinstance(path, str) or not path or kind not in _ALLOWED_STALE_REASONS:
+            raise InvalidProjectModelError("invalid stale reason")
+        key = (path, kind)
+        if previous is not None and key < previous:
+            raise InvalidProjectModelError("stale reasons must be sorted")
+        previous = key
+
+
+def _validate_section(section_id: object, section: object) -> None:
+    _validate_section_id(section_id)
+    if not isinstance(section, dict):
+        raise InvalidProjectModelError(f"section {section_id} must be an object")
+    _validate_nonempty(f"section {section_id} title", section.get("title"))
+    _validate_nonempty(f"section {section_id} content", section.get("content"))
+    revision = section.get("revision")
+    if not _is_int(revision) or revision < 0:
+        raise InvalidProjectModelError(f"section {section_id} revision must be non-negative")
+    status = section.get("status")
+    if status not in _ALLOWED_STATUSES:
+        raise InvalidProjectModelError(f"section {section_id} has invalid status")
+    _validate_evidence(section.get("evidence"))
+    _validate_stale_reasons(section.get("stale_reasons"))
+    if status == "verified" and not section["evidence"]:
+        raise InvalidProjectModelError(f"section {section_id} cannot be verified without evidence")
+    if status == "unknown" and section["evidence"]:
+        raise InvalidProjectModelError(f"section {section_id} cannot be unknown with evidence")
+    if status != "stale" and section["stale_reasons"]:
+        raise InvalidProjectModelError(f"section {section_id} has stale reasons while not stale")
+
+
+def _validate_model(model: object) -> dict[str, Any]:
+    if not isinstance(model, dict):
+        raise InvalidProjectModelError("project_model must be an object")
+    revision = model.get("revision")
+    if not _is_int(revision) or revision < 0:
+        raise InvalidProjectModelError("project_model revision must be non-negative")
+    sections = model.get("sections")
+    if not isinstance(sections, dict):
+        raise InvalidProjectModelError("project_model sections must be an object")
+    for section_id, section in sections.items():
+        _validate_section(section_id, section)
+    return model
+
+
+def get_project_model(state: dict[str, Any]) -> dict[str, Any]:
+    """Return a validated copy of the authoritative model or an empty virtual model."""
+
+    if "project_model" not in state:
+        return {"revision": 0, "sections": {}}
+    return copy.deepcopy(_validate_model(state["project_model"]))
+
+
+def _model_for_mutation(state: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+    existing = state.get("project_model")
+    if existing is None:
+        return {"revision": 0, "sections": {}}, False
+    return copy.deepcopy(_validate_model(existing)), True
+
+
+def upsert_section(
+    project_root: Path,
+    section_id: str,
+    title: str,
+    content: str,
+    evidence_paths: Iterable[str | Path],
+    expected_section_revision: int | None = None,
+) -> dict[str, Any]:
+    """Create or update one project-model section with section-level CAS."""
+
+    section_id = _validate_section_id(section_id)
+    title = _validate_nonempty("section title", title)
+    content = _validate_nonempty("section content", content)
+    evidence = capture_evidence(project_root, evidence_paths)
+
+    def mutate(state: dict[str, Any]) -> None:
+        model, existed = _model_for_mutation(state)
+        current = model["sections"].get(section_id)
+        if current is None:
+            if expected_section_revision is not None:
+                raise SectionConflictError(section_id, expected_section_revision, None)
+            section_revision = 0
+        else:
+            actual = current["revision"]
+            if expected_section_revision != actual:
+                raise SectionConflictError(section_id, expected_section_revision, actual)
+            section_revision = actual + 1
+
+        model["sections"][section_id] = {
+            "title": title,
+            "revision": section_revision,
+            "status": "verified" if evidence else "unknown",
+            "content": content,
+            "evidence": evidence,
+            "stale_reasons": [],
+        }
+        if existed:
+            model["revision"] += 1
+        _validate_model(model)
+        state["project_model"] = model
+        return None
+
+    return mutate_latest_state(project_root, mutate)
+
+
+def remove_section(
+    project_root: Path,
+    section_id: str,
+    expected_section_revision: int,
+) -> dict[str, Any]:
+    """Remove one project-model section with exact section-revision CAS."""
+
+    section_id = _validate_section_id(section_id)
+    if not _is_int(expected_section_revision) or expected_section_revision < 0:
+        raise InvalidProjectModelError("expected_section_revision must be a non-negative integer")
+
+    def mutate(state: dict[str, Any]) -> None:
+        if "project_model" not in state:
+            raise UnknownSectionError(f"unknown project-model section: {section_id}")
+        model, _ = _model_for_mutation(state)
+        current = model["sections"].get(section_id)
+        if current is None:
+            raise UnknownSectionError(f"unknown project-model section: {section_id}")
+        actual = current["revision"]
+        if expected_section_revision != actual:
+            raise SectionConflictError(section_id, expected_section_revision, actual)
+        del model["sections"][section_id]
+        model["revision"] += 1
+        _validate_model(model)
+        state["project_model"] = model
+        return None
+
+    return mutate_latest_state(project_root, mutate)
+
+
+def refresh_staleness(project_root: Path) -> dict[str, Any]:
+    """Recompute evidence freshness without auto-clearing an already stale section."""
+
+    root = Path(project_root).resolve()
+
+    def mutate(state: dict[str, Any]) -> None:
+        if "project_model" not in state:
+            return None
+        model, _ = _model_for_mutation(state)
+        changed = False
+
+        for section_id in sorted(model["sections"]):
+            section = model["sections"][section_id]
+            evidence = section["evidence"]
+            if not evidence:
+                continue
+
+            reasons: list[dict[str, str]] = []
+            for stored in evidence:
+                path = stored["path"]
+                try:
+                    current = fingerprint_file(root, path)
+                except EvidenceError as error:
+                    reason = error.reason if error.reason in _ALLOWED_STALE_REASONS else "unreadable"
+                    reasons.append({"path": path, "reason": reason})
+                    continue
+                if current["sha256"] != stored["sha256"]:
+                    reasons.append({"path": path, "reason": "changed"})
+
+            reasons.sort(key=lambda item: (item["path"], item["reason"]))
+            if section["status"] == "stale" and not reasons:
+                continue
+
+            status = "stale" if reasons else "verified"
+            if section["status"] != status or section["stale_reasons"] != reasons:
+                section["status"] = status
+                section["stale_reasons"] = reasons
+                changed = True
+
+        if changed:
+            model["revision"] += 1
+            _validate_model(model)
+            state["project_model"] = model
+        return None
+
+    return mutate_latest_state(root, mutate)
+
+
+def _code_path(project_root: Path, *, create_directory: bool = False) -> Path:
+    directory = state_directory(project_root, create=create_directory)
+    path = directory / "code.md"
+    try:
+        mode = path.lstat().st_mode
+    except FileNotFoundError:
+        return path
+    if stat.S_ISLNK(mode) or not stat.S_ISREG(mode):
+        raise ProjectModelRenderError(f"Praxis code map must be a real file: {path}")
+    return path
+
+
+def _render_model_text(model: dict[str, Any]) -> str:
+    lines = [
+        "# Praxis Verified Project Model",
+        "",
+        f'<!-- praxis:project-model revision="{model["revision"]}" -->',
+        "",
+    ]
+    for section_id in sorted(model["sections"]):
+        section = model["sections"][section_id]
+        lines.extend(
+            [
+                f'## {section["title"]}',
+                f'<!-- praxis:section id="{section_id}" revision="{section["revision"]}" status="{section["status"]}" -->',
+                "",
+                section["content"].rstrip(),
+                "",
+            ]
+        )
+        if section["evidence"]:
+            lines.append("Evidence:")
+            for evidence in section["evidence"]:
+                lines.append(f'- `{evidence["path"]}` — `sha256:{evidence["sha256"]}`')
+        else:
+            lines.append("Evidence: none (unknown)")
+
+        if section["status"] == "stale":
+            lines.extend(["", "Stale reasons:"])
+            for reason in section["stale_reasons"]:
+                lines.append(f'- `{reason["path"]}` — `{reason["reason"]}`')
+        lines.extend(["", ""])
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _fsync_directory(directory: Path) -> None:
+    try:
+        descriptor = os.open(directory, os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(descriptor)
+    except OSError:
+        pass
+    finally:
+        os.close(descriptor)
+
+
+def render_project_model(project_root: Path) -> Path:
+    """Atomically rebuild `.praxis/code.md` from authoritative project-model state."""
+
+    root = Path(project_root).resolve()
+    state = load_state(root)
+    if state is None or "project_model" not in state:
+        raise InvalidProjectModelError("project model is not initialized")
+    model = get_project_model(state)
+    payload = _render_model_text(model)
+    path = _code_path(root, create_directory=True)
+    directory = path.parent
+
+    descriptor: int | None = None
+    temporary_path: Path | None = None
+    try:
+        descriptor, raw_path = tempfile.mkstemp(prefix=".code-", dir=directory)
+        temporary_path = Path(raw_path)
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as stream:
+            descriptor = None
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary_path, path)
+        temporary_path = None
+        _fsync_directory(directory)
+    except (OSError, UnicodeError) as error:
+        raise ProjectModelRenderError(f"failed to render Praxis code map: {path}") from error
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        if temporary_path is not None:
+            try:
+                temporary_path.unlink()
+            except FileNotFoundError:
+                pass
+    return path
+
+
+def _rendered_model_revision(project_root: Path) -> int | None:
+    path = _code_path(project_root)
+    if not path.exists():
+        return None
+    try:
+        text = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        raise ProjectModelRenderError(f"unable to read Praxis code map: {path}") from error
+    match = _MODEL_MARKER.search(text)
+    if match is None:
+        return None
+    return int(match.group(1))
+
+
+def project_model_status(project_root: Path) -> dict[str, Any]:
+    """Return read-only project-model freshness and projection status."""
+
+    root = Path(project_root).resolve()
+    state = load_state(root)
+    if state is None or "project_model" not in state:
+        return {
+            "exists": False,
+            "revision": None,
+            "sections": [],
+            "stale_sections": [],
+            "render_required": False,
+        }
+
+    model = get_project_model(state)
+    sections = [
+        {
+            "id": section_id,
+            "title": model["sections"][section_id]["title"],
+            "revision": model["sections"][section_id]["revision"],
+            "status": model["sections"][section_id]["status"],
+        }
+        for section_id in sorted(model["sections"])
+    ]
+    stale_sections = [item["id"] for item in sections if item["status"] == "stale"]
+    return {
+        "exists": True,
+        "revision": model["revision"],
+        "sections": sections,
+        "stale_sections": stale_sections,
+        "render_required": _rendered_model_revision(root) != model["revision"],
+    }

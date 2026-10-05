@@ -18,13 +18,17 @@ Harness-specific APIs must not enter the neutral Python core.
 
 ## Current status
 
-Feature-01 repository foundation and Feature-02 Praxis State Core are implemented.
+Features 01–03 are implemented: the AI-native repository foundation, Praxis State Core, and Verified Project Model.
 
 Feature-02 provides project-boundary discovery, symlink-safe project state paths, format-versioned `.praxis/state.json`, bounded write locking, atomic replacement, compare-and-swap revisions, durable multi-task records, pause/resume state, and a JSON CLI contract for future host adapters.
 
-Installing Praxis still does not enable a project. Explicit `praxis enable --cwd <path>` creates project-local state; `praxis status --cwd <path>` is read-only when no state exists.
+Feature-03 adds machine-owned source fingerprints, section-level compare-and-swap for the project model, incremental stale detection, and deterministic `.praxis/code.md` recovery. `state.json.project_model` is authoritative; `code.md` is a rebuildable human/model-readable projection rather than a second source of truth.
 
-Features 03–06 will add the verified project model and stale detection, Tutor decision provenance/behavior, Codex lifecycle integration, and native DSH integration. Current code does not claim those capabilities.
+A source change does not cause Praxis to invent new architecture prose. `map-check` marks only affected sections stale. A later Tutor or host can re-read the relevant evidence and explicitly `map-upsert` refreshed semantic content, preserving the boundary between verified facts and AI interpretation.
+
+Installing Praxis still does not enable a project. Explicit `praxis enable --cwd <path>` creates project-local state; `praxis status --cwd <path>` and `praxis map-status --cwd <path>` are read-only when no state exists.
+
+Features 04–06 will add the Tutor decision loop and durable decision provenance, Codex lifecycle integration, and native DSH integration. Current code does not claim those capabilities.
 
 ## State CLI
 
@@ -36,6 +40,21 @@ python -m praxis task-create --cwd . --expected-revision 0 --host codex --title 
 ```
 
 State commands emit JSON for adapter consumption. Mutations require the caller's expected revision where applicable so stale writers cannot overwrite newer state.
+
+## Verified project model CLI
+
+```bash
+python -m praxis map-status --cwd .
+python -m praxis map-upsert --cwd . \
+  --section-id auth \
+  --title "Authentication" \
+  --content "Owns authentication and session lifecycle." \
+  --evidence src/auth.py
+python -m praxis map-check --cwd .
+python -m praxis map-render --cwd .
+```
+
+Project-model writes use section-level revisions, so unrelated sections can progress independently even when the global `state.json` revision changes. Source fingerprints and stale reasons are produced by the neutral core rather than supplied by the model.
 
 ## Repository navigation
 

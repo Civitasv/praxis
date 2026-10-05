@@ -183,6 +183,18 @@ def _atomic_write_state(project_root: Path, state: dict[str, Any]) -> None:
                 pass
 
 
+def _apply_mutator(
+    current: dict[str, Any],
+    mutator: Callable[[dict[str, Any]], dict[str, Any] | None],
+) -> dict[str, Any]:
+    working = copy.deepcopy(current)
+    candidate = mutator(working)
+    updated = working if candidate is None else candidate
+    if not isinstance(updated, dict):
+        raise InvalidStateError("state mutator must return an object or None")
+    return updated
+
+
 def _mutate_locked(
     project_root: Path,
     expected_revision: int,
@@ -194,11 +206,7 @@ def _mutate_locked(
     if expected_revision != current["revision"]:
         raise RevisionConflictError(expected_revision, current["revision"])
 
-    working = copy.deepcopy(current)
-    candidate = mutator(working)
-    updated = working if candidate is None else candidate
-    if not isinstance(updated, dict):
-        raise InvalidStateError("state mutator must return an object or None")
+    updated = _apply_mutator(current, mutator)
     updated["revision"] = current["revision"] + 1
     _validate_state(updated)
     _atomic_write_state(project_root, updated)
@@ -212,6 +220,29 @@ def mutate_state(
 ) -> dict[str, Any]:
     with StateLock(project_root):
         return _mutate_locked(project_root, expected_revision, mutator)
+
+
+def mutate_latest_state(
+    project_root: Path,
+    mutator: Callable[[dict[str, Any]], dict[str, Any] | None],
+) -> dict[str, Any]:
+    """Mutate the latest state under lock and avoid writing semantic no-ops."""
+
+    with StateLock(project_root):
+        current = load_state(project_root)
+        if current is None:
+            raise StateNotInitializedError("Praxis state is not initialized")
+
+        updated = _apply_mutator(current, mutator)
+        updated["revision"] = current["revision"]
+        _validate_state(updated)
+        if updated == current:
+            return current
+
+        updated["revision"] = current["revision"] + 1
+        _validate_state(updated)
+        _atomic_write_state(project_root, updated)
+        return updated
 
 
 def enable_state(project_root: Path, expected_revision: int | None = None) -> dict[str, Any]:
