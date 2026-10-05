@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 from typing import Any, Iterable
 
-from .fingerprints import capture_evidence
+from .fingerprints import EvidenceError, capture_evidence, fingerprint_file
 from .state import mutate_latest_state
 
 
@@ -219,3 +219,48 @@ def remove_section(
         return None
 
     return mutate_latest_state(project_root, mutate)
+
+
+def refresh_staleness(project_root: Path) -> dict[str, Any]:
+    """Recompute source fingerprints and mark only affected sections stale."""
+
+    root = Path(project_root).resolve()
+
+    def mutate(state: dict[str, Any]) -> None:
+        if "project_model" not in state:
+            return None
+        model, _ = _model_for_mutation(state)
+        changed = False
+
+        for section_id in sorted(model["sections"]):
+            section = model["sections"][section_id]
+            evidence = section["evidence"]
+            if not evidence:
+                continue
+
+            reasons: list[dict[str, str]] = []
+            for stored in evidence:
+                path = stored["path"]
+                try:
+                    current = fingerprint_file(root, path)
+                except EvidenceError as error:
+                    reason = error.reason if error.reason in _ALLOWED_STALE_REASONS else "unreadable"
+                    reasons.append({"path": path, "reason": reason})
+                    continue
+                if current["sha256"] != stored["sha256"]:
+                    reasons.append({"path": path, "reason": "changed"})
+
+            reasons.sort(key=lambda item: (item["path"], item["reason"]))
+            status = "stale" if reasons else "verified"
+            if section["status"] != status or section["stale_reasons"] != reasons:
+                section["status"] = status
+                section["stale_reasons"] = reasons
+                changed = True
+
+        if changed:
+            model["revision"] += 1
+            _validate_model(model)
+            state["project_model"] = model
+        return None
+
+    return mutate_latest_state(root, mutate)
