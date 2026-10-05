@@ -23,6 +23,7 @@ class RepositoryContractTests(unittest.TestCase):
             "Docs/Development/Validation.md",
             "Docs/Specs/Feature-01 Repository Foundation.md",
             "Docs/Specs/Feature-02 Praxis State Core.md",
+            "Docs/Specs/Feature-03 Verified Project Model.md",
             ".github/pull_request_template.md",
         ]
         for relative in required:
@@ -41,7 +42,7 @@ class RepositoryContractTests(unittest.TestCase):
             with self.subTest(expected=expected):
                 self.assertIn(expected, text)
 
-    def test_code_map_names_foundation_and_state_core_boundaries(self) -> None:
+    def test_code_map_names_implemented_neutral_core_boundaries(self) -> None:
         text = self.read("Code.md")
         for expected in (
             "praxis/",
@@ -52,24 +53,28 @@ class RepositoryContractTests(unittest.TestCase):
             "praxis/state.py",
             "praxis/locking.py",
             "praxis/tasks.py",
+            "praxis/fingerprints.py",
+            "praxis/project_map.py",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, text)
 
-    def test_state_records_feature_one_and_two_implemented(self) -> None:
+    def test_state_records_features_one_through_three_implemented(self) -> None:
         text = self.read("State.md")
         self.assertIn("Feature-01: Implemented", text)
         self.assertIn("Feature-02: Implemented", text)
+        self.assertIn("Feature-03: Implemented", text)
         for capability in (
-            "Project boundary discovery",
-            "Versioned state schema",
-            "Atomic CAS state writes",
-            "Durable multi-task lifecycle",
-            "JSON CLI state contract",
+            "Source evidence fingerprints",
+            "Section-level project-model CAS",
+            "Incremental stale detection",
+            "Deterministic code.md projection",
+            "Project-model JSON CLI",
         ):
             self.assertIn(f"{capability}: Implemented", text)
-        for feature in range(3, 7):
+        for feature in range(4, 7):
             self.assertIn(f"Feature-{feature:02d}: Pending", text)
+        self.assertNotIn("Feature-03: Pending", text)
 
     def test_state_lists_current_validation_commands(self) -> None:
         text = self.read("State.md")
@@ -81,11 +86,18 @@ class RepositoryContractTests(unittest.TestCase):
         ):
             self.assertIn(command, text)
 
-    def test_readme_does_not_claim_later_runtime_features(self) -> None:
+    def test_readme_describes_verified_model_without_claiming_tutor_or_host_runtime(self) -> None:
         text = self.read("README.md")
-        self.assertIn("state.json", text)
-        self.assertIn("compare-and-swap", text)
-        self.assertIn("Features 03–06", text)
+        for expected in (
+            "state.json",
+            "compare-and-swap",
+            "source fingerprints",
+            "section-level",
+            "stale",
+            "code.md",
+        ):
+            self.assertIn(expected, text)
+        self.assertIn("Features 04–06", text)
 
     def test_validation_requires_python_310_and_github_actions(self) -> None:
         text = self.read("Docs/Development/Validation.md")
