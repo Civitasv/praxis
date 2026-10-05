@@ -6,6 +6,9 @@ import sys
 import tempfile
 import unittest
 
+from praxis.cli import _error_code
+import praxis.state as state_module
+
 
 ROOT = Path(__file__).resolve().parents[1]
 FORBIDDEN_IMPORT_FRAGMENTS = ("deepseek", "cordis", "codex", "plugins.dsh", "plugins.codex")
@@ -58,6 +61,10 @@ class CliBaselineTests(unittest.TestCase):
 
 
 class CliStateTests(CliBaselineTests):
+    def test_state_read_failure_has_distinct_error_code(self) -> None:
+        error = state_module.StateReadError("denied")
+        self.assertEqual(_error_code(error), "state_read_failed")
+
     def test_status_without_state_is_read_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             result, payload = self.run_json("status", "--cwd", tmp)
