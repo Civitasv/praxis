@@ -17,6 +17,7 @@ from .state import (
     PraxisStateError,
     RevisionConflictError,
     StateNotInitializedError,
+    StateReadError,
     StateWriteError,
     UnsupportedFormatError,
     enable_state,
@@ -91,6 +92,8 @@ def _error_code(error: Exception) -> str:
         return "invalid_task"
     if isinstance(error, MalformedStateError):
         return "malformed_state"
+    if isinstance(error, StateReadError):
+        return "state_read_failed"
     if isinstance(error, UnsupportedFormatError):
         return "unsupported_format"
     if isinstance(error, InvalidStateError):
