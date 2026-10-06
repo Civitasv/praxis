@@ -28,7 +28,7 @@ test('exports native Cordis plugin contract', () => {
   assert.equal(typeof apply, 'function')
 })
 
-test('pins the current DeepSeek Harness preview API family', async () => {
+test('declares both verified DSH API families and consistent development pins', async () => {
   const pluginPackage = JSON.parse(
     await readFile(new URL('../package.json', import.meta.url), 'utf8'),
   ) as { peerDependencies?: Record<string, string> }
@@ -43,8 +43,19 @@ test('pins the current DeepSeek Harness preview API family', async () => {
     '@deepseek-ai/dsh-llm': '0.2.1-alpha.1',
     '@deepseek-ai/dsh-skill': '0.2.1-alpha.1',
   }
-  assert.deepEqual(pluginPackage.peerDependencies, expected)
-  for (const [pkg, version] of Object.entries(expected)) {
-    assert.equal(rootPackage.devDependencies?.[pkg], version)
+  const rootManifest = JSON.parse(
+    await readFile(new URL('../../../package.json', import.meta.url), 'utf8'),
+  ) as { peerDependencies: Record<string, string> }
+  const sdkVersion = rootPackage.devDependencies?.['@deepseek-ai/dsh-agent']
+  assert.ok(sdkVersion === '0.2.0-rc.2' || sdkVersion === '0.2.1-alpha.1')
+  for (const [pkg, previewVersion] of Object.entries(expected)) {
+    const stableVersion = pkg === '@deepseek-ai/cordis' ? '4.0.4' : '0.2.0-rc.2'
+    const range = `${stableVersion} || ${previewVersion}`
+    assert.equal(pluginPackage.peerDependencies?.[pkg], range)
+    assert.equal(rootManifest.peerDependencies[pkg], range)
+    assert.equal(rootPackage.devDependencies?.[pkg],
+      pkg === '@deepseek-ai/cordis'
+        ? sdkVersion === '0.2.0-rc.2' ? '4.0.4' : previewVersion
+        : sdkVersion)
   }
 })

@@ -57,7 +57,7 @@ test('neutral Python core contains no DeepSeek Harness or Cordis dependencies', 
 })
 
 
-test('root development pins include the DSH preview type dependency closure', async () => {
+test('root development pins include the selected DSH type dependency closure', async () => {
   const root = JSON.parse(
     await readFile(new URL('../../../package.json', import.meta.url), 'utf8'),
   ) as { devDependencies?: Record<string, string> }
@@ -70,8 +70,13 @@ test('root development pins include the DSH preview type dependency closure', as
     '@deepseek-ai/dsh-llm': '0.2.1-alpha.1',
     '@deepseek-ai/dsh-skill': '0.2.1-alpha.1',
   }
+  const sdkVersion = root.devDependencies?.['@deepseek-ai/dsh-agent']
+  assert.ok(sdkVersion === '0.2.0-rc.2' || sdkVersion === '0.2.1-alpha.1')
   for (const [pkg, version] of Object.entries(expected)) {
-    assert.equal(root.devDependencies?.[pkg], version, pkg)
+    const selected: string = sdkVersion === '0.2.0-rc.2'
+      ? pkg === '@deepseek-ai/cordis' ? '4.0.4' : sdkVersion
+      : version
+    assert.equal(root.devDependencies?.[pkg], selected, pkg)
   }
 })
 

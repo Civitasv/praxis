@@ -8,14 +8,14 @@ Detailed rationale: `docs/superpowers/specs/2026-10-06-dsh-integration-design.md
 
 ## Host baseline
 
-Feature-06 targets and tests against the current developer-preview API family:
+Feature-06 supports two explicitly bounded API families: DSH `0.2.0-rc.2` with Cordis `4.0.4`, and the following developer-preview family:
 
 - `@deepseek-ai/dsh-agent@0.2.1-alpha.1`
 - `@deepseek-ai/dsh-llm@0.2.1-alpha.1`
 - `@deepseek-ai/dsh-skill@0.2.1-alpha.1`
 - `@deepseek-ai/cordis@4.0.5-alpha.1`
 
-Current lifecycle initialization is `agent/created`.
+Lifecycle initialization is `agent/created` for both families. Root and adapter peer dependencies allow only these two tested versions; CI typechecks and runs the integration suite against each family.
 
 ## Neutral recovery API
 

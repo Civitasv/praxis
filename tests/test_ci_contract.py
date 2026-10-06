@@ -36,9 +36,10 @@ class CiContractTests(unittest.TestCase):
         self.assertIn("concurrency:", text)
         self.assertIn("cancel-in-progress: true", text)
 
-    def test_lockfile_bootstrap_is_not_frozen(self) -> None:
+    def test_dsh_matrix_install_does_not_require_a_frozen_lockfile(self) -> None:
         text = self.workflow()
-        self.assertIn("pnpm install --no-frozen-lockfile", text)
+        self.assertIn("pnpm add -D", text)
+        self.assertNotIn("--frozen-lockfile", text)
 
     def test_validation_docs_forbid_false_green(self) -> None:
         text = (ROOT / "Docs" / "Development" / "Validation.md").read_text(encoding="utf-8")

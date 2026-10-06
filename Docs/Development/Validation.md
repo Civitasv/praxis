@@ -126,3 +126,9 @@ A failed or unrun check cannot be reported Green. Mark unavailable or unrun vali
 ### Codex hook discovery compatibility (2026-10-06)
 
 Observed with the bundled Codex Desktop 0.160.0 app-server, using a disposable `CODEX_HOME` with only the Praxis marketplace/cache: `hooks/list` returned zero Praxis hooks for the installed manifest. Removing only root `plugin.json`'s Agent Plugins `$schema` returned both `SessionStart` and `UserPromptSubmit` as untrusted. Restoring the schema returned zero again. This verifies discovery, not execution or model receipt. The installed cache manifest was also corrected (original saved under `/tmp/praxis-installed-plugin-before-hook-fix.json`); a probe against the real home configuration then returned both hooks as untrusted. The user must review hook trust in the host before live Tutor acceptance can pass.
+
+### DSH rc.2 compatibility
+
+The root and adapter manifests accept `0.2.0-rc.2` or `0.2.1-alpha.1` for DSH services, and `4.0.4` or `4.0.5-alpha.1` for Cordis. The TypeScript CI matrix installs each matching family and runs typechecking and all adapter tests. The original preview development pins remain the default. Version exemptions are not required for these supported families. A package download succeeding does not mean the plugin passed the host's compatibility gate.
+
+Local verification on 2026-10-06: both API families passed TypeScript checks and 33 adapter tests each, using isolated temporary workspaces (rc.2 packages from the installed DSH runtime, alpha packages installed separately with scripts disabled). All 236 Python tests and compile checks passed. Profile installation and live model delivery are still Pending; these checks did not modify the user's DSH profile or grant a compatibility exemption.

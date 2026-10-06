@@ -100,6 +100,13 @@ jobs:
     name: TypeScript / DSH integration
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      matrix:
+        include:
+          - sdk: '0.2.0-rc.2'
+            cordis: '4.0.4'
+          - sdk: '0.2.1-alpha.1'
+            cordis: '4.0.5-alpha.1'
 
     steps:
       - name: Checkout
@@ -121,8 +128,16 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+      - name: Install selected DSH API family
+        run: >-
+          pnpm add -D
+          @deepseek-ai/cordis@${{ matrix.cordis }}
+          @deepseek-ai/dsh-agent@${{ matrix.sdk }}
+          @deepseek-ai/dsh-llm@${{ matrix.sdk }}
+          @deepseek-ai/dsh-skill@${{ matrix.sdk }}
+          @deepseek-ai/dsh-attachment@${{ matrix.sdk }}
+          @deepseek-ai/dsh-brand@${{ matrix.sdk }}
+          @deepseek-ai/dsh-commands@${{ matrix.sdk }}
 
       - name: Typecheck
         run: pnpm typecheck
