@@ -414,6 +414,9 @@ def disable_state(
 ) -> dict[str, Any] | None:
     """Disable Praxis without requiring callers to pre-read a revision."""
 
+    if load_state(project_root) is None:
+        return None
+
     with StateLock(project_root):
         current = load_state(project_root)
         if current is None:
