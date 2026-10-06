@@ -102,9 +102,9 @@ codex plugin marketplace add Civitasv/praxis
 codex
 ```
 
-Inside Codex, run `/plugins`, find **Praxis**, and install it.
+Then install **Praxis** from the Plugins Directory. You can do the final install either from Codex with `/plugins` or from the **ChatGPT desktop app** after restarting it and opening Plugins.
 
-Codex's current CLI can add and manage marketplace sources, but it **does not currently expose a non-interactive plugin install command**, so the final install action is still done in `/plugins`.
+Codex's current CLI can add and manage marketplace sources, but it **does not currently expose a non-interactive plugin install command**, so the final install action is UI-based. Repository/local marketplace testing is supported in ChatGPT Desktop; installing a local plugin on the web does not deploy its local hook scripts.
 
 ### Cursor
 
@@ -144,17 +144,18 @@ The command adds the Praxis marketplace and installs Praxis at user scope. Use `
 
 ## Enable Praxis in a project
 
-Installing an integration does **not** enable Praxis in every repository. From the project you want to use:
+Installing an integration does **not** enable Praxis in every repository. Open the project in your coding agent and use its Praxis control command:
 
-```bash
-python3 -m praxis enable --cwd .
-```
+| Agent | Enable | Disable | Status |
+| --- | --- | --- | --- |
+| Cursor | `/praxis enable` | `/praxis disable` | `/praxis status` |
+| DeepSeek Harness | `/praxis enable` | `/praxis disable` | `/praxis status` |
+| CodeBuddy | `/praxis:enable` | `/praxis:disable` | `/praxis:status` |
+| Codex | `$praxis enable` | `$praxis disable` | `$praxis status` |
 
-Check its state with:
+In ChatGPT Desktop, an installed Praxis plugin can also be addressed with `@Praxis` on a Work/Codex surface that has access to the local project; ask it to enable, disable, or show Praxis status for the current project.
 
-```bash
-python3 -m praxis status --cwd .
-```
+You do **not** need to run the underlying Python command yourself. The CLI remains the host-adapter implementation boundary.
 
 Then work normally. There is no special “Praxis task language” to learn.
 
