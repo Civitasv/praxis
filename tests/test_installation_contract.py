@@ -77,7 +77,9 @@ class InstallationContractTests(unittest.TestCase):
             "git clone --depth 1 https://github.com/Civitasv/praxis.git ~/.cursor/plugins/local/praxis",
             "dsh plugin --profile web add github:Civitasv/praxis",
             "codebuddy plugin marketplace add Civitasv/praxis --name praxis && codebuddy plugin install praxis@praxis",
-            "python3 -m praxis enable --cwd .",
+            "/praxis enable",
+            "/praxis:enable",
+            "$praxis enable",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, text)
