@@ -7,7 +7,7 @@
 <p align="center"><strong>Build with AI. Learn from it.</strong></p>
 
 <p align="center">
-  A plugin for people who want to learn from their coding agent while building real software.
+  A plugin for learning from your coding agent while building real software.
 </p>
 
 <p align="center">
@@ -18,11 +18,11 @@
 
 ## Philosophy
 
-Coding agents can produce software faster than the experience behind that software can turn into judgment.
+AI can build faster than you can learn from what it builds.
 
-Praxis extends the coding agent you already use. When the agent reaches an important engineering conclusion, Praxis helps make the reasoning understandable: why it fits the project, what it trades away, and when the answer would change.
+Praxis extends the coding agent you already use. When a decision is worth understanding, it explains why the choice fits the project, what it trades away, and when the answer would change.
 
-Routine work keeps moving. Useful learning stays visible.
+Routine work keeps moving. Important reasoning stays visible.
 
 **Build with AI. Keep the judgment.**
 
@@ -47,30 +47,30 @@ You     Add persistent chat history.
 Agent   I’ll use the database as the source of truth
         and Redis as a cache.
 
-You     I don't know why.
-
-Agent   Message history is durable product state.
-        If Redis restarts, users should not lose it.
+        This choice matters:
+        history is durable product state, so a Redis restart
+        should not erase it.
 
         The tradeoff is an extra durable write path,
         but Redis stays disposable.
 
-        If history were intentionally ephemeral,
-        Redis-only could be enough.
+You     I don't know what "source of truth" means.
 
-You     So the database owns history; Redis only makes it faster.
+Agent   It means the database owns the canonical history.
+        Redis can make access faster, but losing Redis
+        should not lose messages.
 
-Agent   Exactly.
+You     Got it.
 
-        ✓ Implemented
+Agent   ✓ Implemented
         ✓ Verified: history survived a Redis restart.
 ```
 
-Same agent, same task. Praxis changes what gets explained before the work moves on.
+Praxis keeps the learning inside the same workflow.
 
 ## What Praxis tries to preserve
 
-Engineering judgment is built by connecting decisions to consequences:
+Judgment grows by connecting decisions to consequences:
 
 ```text
 decide
@@ -80,13 +80,13 @@ decide
 → decide better next time
 ```
 
-AI can compress implementation dramatically. Praxis keeps the important parts of that loop visible enough to learn from while you build.
+AI compresses implementation. Praxis keeps enough of the reasoning and feedback visible to learn from the work.
 
 ## Install
 
 Requires Python 3.10+.
 
-Install the shared Praxis core:
+Install Praxis:
 
 ```bash
 python3 -m pip install --user 'git+https://github.com/Civitasv/praxis.git'
@@ -161,7 +161,7 @@ Then run:
 
 </details>
 
-Once enabled, work normally. Praxis stays quiet during routine implementation and surfaces explanations when the work contains something worth learning.
+Once enabled, work normally. Praxis only steps in when there is something worth learning.
 
 ## Commands
 
@@ -174,13 +174,13 @@ Once enabled, work normally. Praxis stays quiet during routine implementation an
 
 ## Update Praxis
 
-Update the shared core first:
+Update Praxis:
 
 ```bash
 python3 -m pip install --user --upgrade 'git+https://github.com/Civitasv/praxis.git'
 ```
 
-Then update the integration you use.
+Then refresh the integration you use.
 
 <details>
 <summary><strong>Codex</strong></summary>
@@ -234,7 +234,7 @@ Then reload plugins:
 
 Praxis is currently **alpha**.
 
-The repository ships integrations for Codex, Cursor, CodeBuddy, and DeepSeek Harness / Cordis. Distribution is currently source-based; public marketplace publication is not claimed yet.
+Current integrations: Codex, Cursor, CodeBuddy, and DeepSeek Harness / Cordis. Distribution is currently source-based.
 
 ## Documentation
 
