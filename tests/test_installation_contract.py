@@ -48,7 +48,7 @@ class InstallationContractTests(unittest.TestCase):
 
     def test_repository_root_is_an_installable_dsh_bundle(self) -> None:
         package = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))
-        self.assertEqual(package["exports"]["."], "./plugins/dsh/src/index.ts")
+        self.assertEqual(package["exports"]["."], "./plugins/dsh/lib/index.js")
         self.assertEqual(
             package["dsh"]["bundle"]["patch"],
             "./plugins/dsh/cordis.patch.yml",

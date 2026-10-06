@@ -38,7 +38,7 @@ It never creates or adopts tasks and never advances decision lifecycle.
 - `inject = ["agents", "skills"]`;
 - `apply(ctx)`.
 
-The plugin registers the shared Praxis Skill and lifecycle listeners.
+The plugin registers the shared Praxis Skill and lifecycle listeners. Package exports load committed JavaScript from `plugins/dsh/lib/index.js`; TypeScript remains the authoring source. `pnpm build:dsh` emits JavaScript with rewritten relative import extensions. CI rebuilds and checks for distribution drift, and imports a fixture installed under `node_modules`. Git installation needs no prepare script or build-script permission. Node type stripping is not supported for TypeScript files under `node_modules`.
 
 ## Skill contract
 

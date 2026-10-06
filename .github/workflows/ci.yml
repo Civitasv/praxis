@@ -142,5 +142,10 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Verify committed JavaScript distribution
+        run: |
+          pnpm build:dsh
+          git diff --exit-code -- plugins/dsh/lib
+
       - name: Test DSH adapter seam
         run: pnpm test:dsh

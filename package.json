@@ -10,7 +10,8 @@
   "scripts": {
     "typecheck": "tsc -p plugins/dsh/tsconfig.json --pretty false",
     "test:dsh": "node --experimental-strip-types --test plugins/dsh/test/*.test.ts",
-    "check:dsh": "pnpm typecheck && pnpm test:dsh"
+    "check:dsh": "pnpm typecheck && pnpm test:dsh",
+    "build:dsh": "tsc -p plugins/dsh/tsconfig.build.json"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
@@ -24,7 +25,7 @@
     "@deepseek-ai/dsh-commands": "0.2.1-alpha.1"
   },
   "exports": {
-    ".": "./plugins/dsh/src/index.ts"
+    ".": "./plugins/dsh/lib/index.js"
   },
   "dsh": {
     "bundle": {
