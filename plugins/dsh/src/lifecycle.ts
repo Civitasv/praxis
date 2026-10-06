@@ -39,25 +39,44 @@ export function registerPraxisLifecycle(
   run: RecoveryRunner = runRecoveryStatus,
 ): void {
   const lastContextDigest = new WeakMap<Agent, string>()
+  const pluginAbort = new AbortController()
+  ctx.effect(
+    () => () => {
+      if (!pluginAbort.signal.aborted) {
+        pluginAbort.abort(new Error('praxis-dsh plugin disposed'))
+      }
+    },
+    'praxis-dsh: abort recovery subprocesses',
+  )
 
-  const recover = async (agent: Agent): Promise<string | undefined> => {
+  const recover = async (
+    agent: Agent,
+    eventSignal?: AbortSignal,
+  ): Promise<string | undefined> => {
     const cwd = projectCwd(agent)
     if (cwd === undefined) return undefined
+    const signal = eventSignal === undefined
+      ? pluginAbort.signal
+      : AbortSignal.any([eventSignal, pluginAbort.signal])
+    if (signal.aborted) return undefined
     try {
       const snapshot = await run({
         cwd,
         host: 'dsh',
         conversationId: String(agent.id),
+        signal,
       })
+      if (signal.aborted) return undefined
       return renderRecoveryContext(snapshot)
     } catch (error: unknown) {
+      if (signal.aborted) return undefined
       ctx.logger.warn(`praxis-dsh: automatic recovery failed: ${String(error)}`)
       return renderRecoveryFallback()
     }
   }
 
-  ctx.on('agent/created', async ({ agent }) => {
-    const context = await recover(agent)
+  ctx.on('agent/created', async ({ agent, signal }) => {
+    const context = await recover(agent, signal)
     if (context === undefined) {
       lastContextDigest.delete(agent)
       return
@@ -78,7 +97,7 @@ export function registerPraxisLifecycle(
       const downstream = await next()
       if (downstream.kind === 'reject' || signal.aborted) return downstream
 
-      const context = await recover(agent)
+      const context = await recover(agent, signal)
       if (context === undefined) {
         lastContextDigest.delete(agent)
         return downstream
