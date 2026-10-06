@@ -4,6 +4,7 @@
 | --- | --- | --- |
 | Neutral Python CLI and source package | Feature-01/02/03/04/06 | `praxis/__init__.py`, `praxis/cli.py`, `praxis/__main__.py`, `pyproject.toml` |
 | Host-neutral recovery snapshot | Feature-06 | `praxis/recovery.py` |
+| Activation diagnostics, bounded hook observations, and removable AGENTS fallback | Feature-05 | `praxis/diagnostics.py`, `praxis/agents.py` |
 | Project boundary and state-path safety | Feature-02 | `praxis/project.py` |
 | Versioned state, atomic writes, CAS, latest-state maintenance | Feature-02/03/04 | `praxis/state.py` |
 | Cross-process write lock | Feature-02 | `praxis/locking.py` |

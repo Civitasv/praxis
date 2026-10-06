@@ -26,3 +26,16 @@ Praxis is a Harness-neutral AI tutor for building software with coding agents. A
 ## Completion baseline
 
 For a foundation change, run the relevant Python unit tests and compile checks plus TypeScript checks once the DSH workspace exists. GitHub Actions is the CI source of truth after the workflow is present.
+
+<!-- praxis:tutor-fallback:start -->
+## Praxis activation fallback
+
+Before proposing a solution or editing for a software task, run `praxis status --cwd .`.
+If the CLI is unavailable, use `python3 -m praxis status --cwd .` (`py -3` on Windows).
+Only when the returned `active` is true, load and follow the shared Praxis Tutor Skill.
+If uninitialized or paused, continue ordinary work without activating tutoring.
+If the check fails, report the failure; do not infer activation or silently reset state.
+A preference answer does not select an implementation. Resolve consequential choices
+with the user; execute mechanical work within an already delegated scope without
+repeated confirmation. This block is removable with `praxis agents-fallback --cwd . --remove`.
+<!-- praxis:tutor-fallback:end -->

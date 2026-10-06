@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
+from .agents import fallback_status, set_fallback
+from .diagnostics import doctor_status
 from .decisions import (
     DecisionConflictError,
     DecisionError,
@@ -87,6 +89,18 @@ def build_parser() -> argparse.ArgumentParser:
     status = subparsers.add_parser("status")
     _add_cwd(status)
 
+    doctor = subparsers.add_parser("doctor")
+    _add_cwd(doctor)
+    doctor.add_argument("--host", default="codex")
+    doctor.add_argument("--plugin-root", type=Path)
+    doctor.add_argument("--host-config", type=Path)
+
+    fallback = subparsers.add_parser("agents-fallback")
+    _add_cwd(fallback)
+    actions = fallback.add_mutually_exclusive_group(required=True)
+    actions.add_argument("--install", action="store_true")
+    actions.add_argument("--remove", action="store_true")
+
     recovery = subparsers.add_parser("recovery-status")
     _add_cwd(recovery)
     recovery.add_argument("--host", required=True)
@@ -95,6 +109,7 @@ def build_parser() -> argparse.ArgumentParser:
     enable = subparsers.add_parser("enable")
     _add_cwd(enable)
     enable.add_argument("--expected-revision", type=int)
+    enable.add_argument("--agents-fallback", action="store_true")
 
     disable = subparsers.add_parser("disable")
     _add_cwd(disable)
@@ -261,6 +276,12 @@ def _run_command(args: argparse.Namespace) -> dict[str, Any]:
     project_root = discover_project_root(args.cwd)
     if args.command == "status":
         return _success(project_root, load_state(project_root))
+    if args.command == "doctor":
+        return {"ok": True, "project_root": str(project_root), "doctor": doctor_status(
+            project_root, host=args.host, plugin_root=args.plugin_root, host_config=args.host_config)}
+    if args.command == "agents-fallback":
+        result = set_fallback(project_root, remove=args.remove)
+        return _success(project_root, load_state(project_root), agents_fallback=result)
     if args.command == "recovery-status":
         recovery = recovery_status(
             project_root,
@@ -273,7 +294,15 @@ def _run_command(args: argparse.Namespace) -> dict[str, Any]:
             recovery=recovery,
         )
     if args.command == "enable":
+        if args.agents_fallback:
+            fallback_status(project_root)
         state = enable_state(project_root, expected_revision=args.expected_revision)
+        if args.agents_fallback:
+            try:
+                fallback = set_fallback(project_root)
+            except (OSError, UnicodeError, ValueError, UnsafeStatePathError) as error:
+                raise StateWriteError("Praxis is enabled, but the AGENTS.md fallback update failed; run doctor.") from error
+            return _success(project_root, state, agents_fallback=fallback)
         return _success(project_root, state)
     if args.command == "disable":
         state = disable_state(project_root, expected_revision=args.expected_revision)
@@ -423,6 +452,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         UnsafeStatePathError,
         LockTimeoutError,
         ValueError,
+        OSError,
     ) as error:
         _emit({"ok": False, "error": {"code": _error_code(error), "message": str(error)}})
         return 2

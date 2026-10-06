@@ -86,6 +86,9 @@ Feature-07: Implemented
 - the adapter deliberately ignores prompt semantics and transcript paths for approval/recovery decisions.
 - malformed/unsupported/unreadable state and refresh/lock failures degrade to a truthful manual Praxis Skill fallback rather than fabricated recovery.
 - Codex host trust remains authoritative. Repository validation proves package/adapter contracts but does not prove that a particular user's environment has deployed or trusted the hook scripts.
+- `praxis doctor` now separates activation, project fallback, hook declarations, read-only script probes, recorded script invocations, and unknown model delivery. Host configuration inspection is adapter-owned and does not grant or infer current-definition trust.
+- Valid initialized-project hook invocations keep bounded event metadata under `.praxis/hook-observations.json`; prompts, transcripts, session ids, and context content are excluded. Diagnostic failures are reported without suppressing hook output.
+- `praxis enable --agents-fallback` explicitly adds a removable AGENTS.md live-state check, announced by the enable Skill. Ordinary CLI enable does not silently modify AGENTS.md; pause/disable preserves the block but keeps it inactive.
 
 ## Implemented DeepSeek Harness integration
 

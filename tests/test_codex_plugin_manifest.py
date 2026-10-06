@@ -22,12 +22,11 @@ class CodexPluginManifestTests(unittest.TestCase):
         self.assertEqual(portable["version"], compatibility["version"])
         self.assertEqual(portable["description"], compatibility["description"])
 
-    def test_portable_manifest_uses_agent_plugins_schema_and_openai_hooks_overlay(self) -> None:
+    def test_manifest_avoids_schema_loader_that_hides_hooks_in_codex_0160(self) -> None:
         portable = self.load_manifest("plugin.json")
-        self.assertEqual(
-            portable["$schema"],
-            "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
-        )
+        # Codex Desktop 0.160.0 hooks/list returns no hooks with this schema;
+        # without it the existing compatibility manifest supplies both hooks.
+        self.assertNotIn("$schema", portable)
         openai = portable["extensions"]["com.openai"]
         self.assertEqual(openai["hooks"], "./plugins/codex/hooks/hooks.json")
         self.assertFalse("skills" in openai)

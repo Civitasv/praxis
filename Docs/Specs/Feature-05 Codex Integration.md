@@ -133,11 +133,27 @@ The adapter never resets/deletes project state or bypasses host trust controls.
 
 When automatic hooks cannot run, the shared Praxis Skill remains the documented manual fallback.
 
+## Delivery diagnostics and project fallback
+
+`praxis doctor --cwd .` reports activation, the managed AGENTS.md block, recent hook observations, and adapter diagnostics. `--plugin-root` selects the installed plugin checkout when the CLI's package does not contain adapters; `--host-config` selects a config file for inspection. Host-specific configuration and probe semantics remain in the adapter, reached through direct argv subprocess execution. The neutral core does not import host APIs.
+
+The Codex adapter checks its manifest/hook declarations and executes the configured launcher against its static script with a synthetic read-only probe. The probe does not refresh project state or write invocation observations. Script execution, host configuration clues, observed invocation, and model delivery are distinct results. A user config file is not a complete view of managed/project policy; trust entries do not prove that the current definition hash is trusted. On Python 3.10, TOML inspection is reported unavailable rather than adding a runtime dependency.
+
+Normal valid hooks store the latest observation per event under `.praxis/hook-observations.json`, outside authoritative domain state. Records contain event/source, UTC timestamp, project/plugin paths, and outcome only. They exclude prompts, transcripts, session ids, recovered content, and exception messages. A started record without completion can indicate interruption. Output success means the script emitted context, not that the host delivered it to the model. Manual invocations are not distinguishable from host invocations. Uninitialized projects create no diagnostics directory. Paused hooks may record diagnostics but cannot mutate domain state or resume tutoring. Failed diagnostic writes are reported on stderr without suppressing context output.
+
+`praxis enable --cwd . --agents-fallback` explicitly installs a removable block in project-root AGENTS.md. The enable Skill announces this before executing and reports the actual results; declining the block uses ordinary enable. Existing user instructions are preserved, and unsafe files or malformed/duplicate markers are rejected. A failed fallback write after activation explicitly reports that activation succeeded but fallback persistence failed. Disable/pause leaves the block in place: its live state check keeps tutoring inactive. `praxis agents-fallback --cwd . --remove` removes only the managed region.
+
+The active injection starts with the instruction to load the Tutor Skill before proposing solutions or editing, distinguishes preferences from implementation selection, and permits delegated mechanical work without repeated confirmation. It adds no edit approval interceptor or semantic consent parser.
+
+Repository tests cover these script and persistence contracts. Live-host acceptance is separately documented in `Docs/Development/Validation.md` and remains Pending until observed in the host. Plugin installation does not grant hook trust; no diagnostic or fallback action changes the host's trust settings.
+
 ## Manifest contract
 
 The repository root `plugin.json` is canonical.
 
-Its `extensions.com.openai` object is the complete OpenAI-specific overlay for the canonical package. It is not merged with the compatibility overlay.
+Its `extensions.com.openai` object contains the complete OpenAI-specific overlay for consumers that support it. It is not merged with the compatibility overlay.
+
+For Codex Desktop 0.160.0, omit the Agent Plugins `$schema` declaration: a local `hooks/list` probe returned zero hooks with the declaration and two untrusted hooks without it, using identical hook files. This host loads the existing compatibility manifest when the declaration is absent. Keep both hook references identical. Restore the schema only after verifying discovery on supported hosts.
 
 `.codex-plugin/plugin.json` is a compatibility manifest describing the same shared Skill and hook package for fallback consumers.
 

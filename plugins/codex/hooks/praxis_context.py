@@ -7,7 +7,10 @@ semantics remain owned by the neutral Praxis package.
 from __future__ import annotations
 
 import json
+import argparse
+import os
 from pathlib import Path
+import subprocess
 import sys
 from typing import Any
 
@@ -17,6 +20,7 @@ if str(PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUGIN_ROOT))
 
 from praxis.decisions import decision_blocked_scopes, list_open_decisions  # noqa: E402
+from praxis.diagnostics import record_hook  # noqa: E402
 from praxis.fingerprints import EvidenceError  # noqa: E402
 from praxis.locking import LockTimeoutError  # noqa: E402
 from praxis.project import UnsafeStatePathError, discover_project_root  # noqa: E402
@@ -44,6 +48,12 @@ _FALLBACK_CONTEXT = (
     "Do not assume durable state was restored. "
     "Recovery is not approval."
 )
+_ACTIVE_CONTEXT = [
+    "Praxis is enabled for this project.",
+    "Praxis active: load and follow the shared Praxis Tutor Skill before proposing a solution or editing.",
+    "A preference answer does not select an implementation.",
+    "Resolve consequential choices with the user; execute mechanical work within an already delegated scope without repeated confirmation.",
+]
 
 
 def _valid_event(event: object) -> dict[str, Any] | None:
@@ -111,7 +121,7 @@ def _bounded_context(lines: list[str]) -> str:
 
 
 
-def build_context(event: dict[str, Any]) -> str | None:
+def build_context(event: dict[str, Any], *, synchronize: bool = True) -> str | None:
     """Build bounded Tutor context without interpreting prompt/transcript data."""
 
     value = _valid_event(event)
@@ -135,14 +145,12 @@ def build_context(event: dict[str, Any]) -> str | None:
             "Do not activate Tutor behavior until the user explicitly resumes it."
         )
 
-    try:
-        state = refresh_staleness(project_root)
-    except _RECOVERABLE_ERRORS:
-        return _FALLBACK_CONTEXT
-    lines = [
-        "Praxis is enabled for this project.",
-        "Load and follow the shared Praxis Tutor Skill.",
-    ]
+    if synchronize:
+        try:
+            state = refresh_staleness(project_root)
+        except _RECOVERABLE_ERRORS:
+            return _FALLBACK_CONTEXT
+    lines = list(_ACTIVE_CONTEXT)
 
     exact = _exact_codex_tasks(state, value.get("session_id"))
     context_task_id: str | None = None
@@ -205,20 +213,120 @@ def build_response(event_name: str, context: str) -> dict[str, Any]:
     }
 
 
+def _observe(event: dict[str, Any], status: str) -> None:
+    if _valid_event(event) is None:
+        return
+    try:
+        record_hook(discover_project_root(event["cwd"]), host="codex",
+                    event=event["hook_event_name"],
+                    source=event.get("source") if event["hook_event_name"] == "SessionStart" else None,
+                    status=status, adapter_root=PLUGIN_ROOT)
+    except (RuntimeError, OSError, ValueError, TypeError, UnicodeError) as error:
+        print(f"Praxis diagnostic write failed: {type(error).__name__}", file=sys.stderr)
+
+
+def doctor_report(cwd: str, host_config: str | None) -> dict[str, Any]:
+    """Inspect this adapter and probe its output without logging or refreshing state."""
+    report: dict[str, Any] = {}
+    expected = 'python3 "${PLUGIN_ROOT}/plugins/codex/hooks/praxis_context.py"'
+    try:
+        portable = json.loads((PLUGIN_ROOT / "plugin.json").read_text(encoding="utf-8"))
+        extension = portable.get("extensions", {}).get("com.openai")
+        overlay = extension if isinstance(extension, dict) else json.loads(
+            (PLUGIN_ROOT / ".codex-plugin/plugin.json").read_text(encoding="utf-8"))
+        relative = overlay.get("hooks")
+        if relative != "./plugins/codex/hooks/hooks.json":
+            raise ValueError("Manifest does not reference this adapter's hook configuration")
+        hooks = json.loads((PLUGIN_ROOT / relative).read_text(encoding="utf-8"))["hooks"]
+        for event in sorted(_ALLOWED_EVENTS):
+            groups = hooks[event]
+            if len(groups) != 1 or len(groups[0]["hooks"]) != 1:
+                raise ValueError("Expected one handler per recovery event")
+            handler = groups[0]["hooks"][0]
+            if handler.get("type") != "command" or handler.get("command") != expected:
+                raise ValueError("Hook command does not match the packaged adapter")
+            if handler.get("commandWindows") != 'py -3 "%PLUGIN_ROOT%\\plugins\\codex\\hooks\\praxis_context.py"':
+                raise ValueError("Windows hook command does not match the packaged adapter")
+            limit = handler.get("additionalContextLimit")
+            if not isinstance(limit, int) or isinstance(limit, bool) or limit <= 0:
+                raise ValueError("Hook context limit must be a positive integer")
+            if event == "SessionStart" and groups[0].get("matcher") != "^(startup|resume|clear|compact)$":
+                raise ValueError("Recovery sources are incomplete")
+            if event == "UserPromptSubmit" and "matcher" in groups[0]:
+                raise ValueError("Prompt recovery must not depend on prompt matching")
+        report["hook_config"] = {"status": "ok", "path": str(PLUGIN_ROOT / relative)}
+    except (OSError, ValueError, KeyError, TypeError) as error:
+        report["hook_config"] = {"status": "error", "error_type": type(error).__name__}
+
+    config = Path(host_config) if host_config else Path(os.environ.get("CODEX_HOME", Path.home() / ".codex")) / "config.toml"
+    try:
+        import tomllib
+        value = tomllib.loads(config.read_text(encoding="utf-8"))
+        entries = [v for k, v in value.get("hooks", {}).get("state", {}).items()
+                   if k.startswith("praxis@praxis:")]
+        report["host_configuration"] = {
+            "status": "inspected", "path": str(config),
+            "plugin_enabled": value.get("plugins", {}).get("praxis@praxis", {}).get("enabled"),
+            "trust": "recorded_current_hash_unverified" if any(v.get("trusted_hash") for v in entries) else "not_recorded",
+            "disabled_entries": sum(v.get("enabled") is False or v.get("disabled") is True for v in entries),
+            "meaning": "This config file alone does not establish effective host policy or trust of the current definition.",
+        }
+    except (ImportError, OSError, ValueError, TypeError, AttributeError) as error:
+        report["host_configuration"] = {"status": "unknown", "path": str(config), "error_type": type(error).__name__,
+                                        "hint": "Inspect Codex hook trust in the host; TOML inspection needs Python 3.11+."}
+
+    event = {"hook_event_name": "SessionStart", "source": "startup", "cwd": cwd}
+    launcher = ["py", "-3"] if os.name == "nt" else ["python3"]
+    try:
+        result = subprocess.run([*launcher, str(Path(__file__).resolve()), "--probe"],
+                                input=json.dumps(event), text=True, capture_output=True,
+                                timeout=5, shell=False, cwd=cwd)
+        context = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"] if result.stdout else None
+        report["script_probe"] = {
+            "status": "ok" if result.returncode == 0 and context != _FALLBACK_CONTEXT else "error",
+            "returncode": result.returncode, "context_emitted": context is not None,
+            "meaning": "Synthetic read-only probe; not a host invocation or model delivery receipt.",
+        }
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
+        report["script_probe"] = {"status": "error", "error_type": type(error).__name__}
+    return report
+
+
 def main() -> int:
+    if "--doctor" in sys.argv[1:]:
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--doctor", action="store_true")
+        parser.add_argument("--cwd", required=True)
+        parser.add_argument("--host-config")
+        args = parser.parse_args()
+        print(json.dumps(doctor_report(args.cwd, args.host_config), sort_keys=True))
+        return 0
+    probe = "--probe" in sys.argv[1:]
     try:
         event = json.load(sys.stdin)
     except (json.JSONDecodeError, UnicodeError):
         return 0
     if not isinstance(event, dict):
         return 0
-    context = build_context(event)
+    if not probe:
+        _observe(event, "started")
+    context = build_context(event, synchronize=not probe)
     if context is None:
+        if not probe:
+            _observe(event, "no_context")
         return 0
     event_name = event.get("hook_event_name")
     if not isinstance(event_name, str):
         return 0
-    print(json.dumps(build_response(event_name, context), ensure_ascii=False, sort_keys=True))
+    try:
+        print(json.dumps(build_response(event_name, context), ensure_ascii=False, sort_keys=True), flush=True)
+    except OSError:
+        if not probe:
+            _observe(event, "output_failed")
+        return 0
+    if not probe:
+        outcome = "recovery_failed" if context == _FALLBACK_CONTEXT else "paused" if context.startswith("Praxis is paused") else "context_emitted"
+        _observe(event, outcome)
     return 0
 
 

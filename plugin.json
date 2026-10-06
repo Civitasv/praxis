@@ -1,5 +1,4 @@
 {
-  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "praxis",
   "version": "0.1.0",
   "description": "Build software with AI while developing engineering taste.",
