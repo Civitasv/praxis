@@ -27,7 +27,7 @@ test('registers the shared Praxis Skill without copying it into the DSH package'
 
   dispose()
   assert.equal(await ctx.skills.get('praxis'), undefined)
-  await ctx.dispose()
+  await ctx.fiber.dispose()
 })
 
 
