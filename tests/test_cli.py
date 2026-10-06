@@ -135,6 +135,24 @@ class CliStateTests(CliBaselineTests):
                 ["storage", "permissions"],
             )
 
+    def test_recovery_status_is_host_neutral_json_and_read_only_when_uninitialized(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result, payload = self.run_json(
+                "recovery-status",
+                "--cwd",
+                tmp,
+                "--host",
+                "dsh",
+                "--conversation-id",
+                "session-1",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(payload["ok"])
+            self.assertFalse(payload["active"])
+            self.assertEqual(payload["recovery"]["initialized"], False)
+            self.assertEqual(payload["recovery"]["task_resolution"]["kind"], "none")
+            self.assertFalse((Path(tmp) / ".praxis").exists())
+
     def test_missing_required_state_argument_returns_json_error(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             result, payload = self.run_json("pause", "--cwd", tmp)
