@@ -24,7 +24,7 @@ test('adapter seam does not reach into neutral or private implementation paths',
 
 test('exports native Cordis plugin contract', () => {
   assert.equal(name, 'praxis-dsh')
-  assert.deepEqual(inject, ['agents', 'skills'])
+  assert.deepEqual(inject, ['agents', 'commands', 'skills'])
   assert.equal(typeof apply, 'function')
 })
 
@@ -39,6 +39,7 @@ test('pins the current DeepSeek Harness preview API family', async () => {
   const expected = {
     '@deepseek-ai/cordis': '4.0.5-alpha.1',
     '@deepseek-ai/dsh-agent': '0.2.1-alpha.1',
+    '@deepseek-ai/dsh-commands': '0.2.1-alpha.1',
     '@deepseek-ai/dsh-llm': '0.2.1-alpha.1',
     '@deepseek-ai/dsh-skill': '0.2.1-alpha.1',
   }

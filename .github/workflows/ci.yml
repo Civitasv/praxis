@@ -90,6 +90,7 @@ jobs:
           tests.test_cursor_integration
           tests.test_codebuddy_integration
           tests.test_agent_plugin_distribution
+          tests.test_command_surfaces
           -v
 
       - name: Compile host adapters

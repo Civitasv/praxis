@@ -49,6 +49,7 @@ class AgentPluginDistributionTests(unittest.TestCase):
         self.assertIn("tests.test_cursor_integration", workflow)
         self.assertIn("tests.test_codebuddy_integration", workflow)
         self.assertIn("tests.test_shared_recovery_hook", workflow)
+        self.assertIn("tests.test_command_surfaces", workflow)
         self.assertIn(
             "python -m compileall -q plugins/shared plugins/cursor plugins/codebuddy",
             workflow,

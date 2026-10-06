@@ -45,7 +45,8 @@ python -m unittest \
   tests.test_shared_recovery_hook \
   tests.test_cursor_integration \
   tests.test_codebuddy_integration \
-  tests.test_agent_plugin_distribution -v
+  tests.test_agent_plugin_distribution \
+  tests.test_command_surfaces -v
 python -m compileall -q plugins/shared plugins/cursor plugins/codebuddy
 ```
 
@@ -66,14 +67,14 @@ Feature-06 tests the native Cordis adapter against the pinned current preview fa
 - `@deepseek-ai/dsh-skill@0.2.1-alpha.1`
 - `@deepseek-ai/cordis@4.0.5-alpha.1`
 
-The root development dependency set also pins the preview type closure required by those packages: `@deepseek-ai/dsh-attachment@0.2.1-alpha.1` and `@deepseek-ai/dsh-brand@0.2.1-alpha.1`.
+The root development dependency set also pins the preview type closure required by those packages: `@deepseek-ai/dsh-attachment@0.2.1-alpha.1`, `@deepseek-ai/dsh-brand@0.2.1-alpha.1`, and the human command registry `@deepseek-ai/dsh-commands@0.2.1-alpha.1`.
 
 ```bash
 pnpm typecheck
 pnpm test:dsh
 ```
 
-The **TypeScript / DSH integration** GitHub Actions job explicitly provisions Node 22.20.0 and Python 3.10. It validates the Cordis plugin export shape, shared Skill registration, direct-argv TypeScript-to-Python `recovery-status` bridge, 3000-character renderer, real `agent/created` and `agent/pre-step` event behavior, digest de-duplication, cleanup, and distribution boundaries.
+The **TypeScript / DSH integration** GitHub Actions job explicitly provisions Node 22.20.0 and Python 3.10. It validates the Cordis plugin export shape, shared Skill registration, direct `/praxis` command registration, direct-argv TypeScript-to-Python recovery/control bridges, 3000-character renderer, real `agent/created` and `agent/pre-step` event behavior, digest de-duplication, cleanup, and distribution boundaries.
 
 These tests exercise the DSH package APIs inside the repository. The repository root declares a DSH bundle for Git-backed profile installation, but does not claim npm publication.
 

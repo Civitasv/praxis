@@ -4,6 +4,7 @@ import { test } from 'node:test'
 
 import { Context } from '@deepseek-ai/cordis'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
+import CommandRuntime from '@deepseek-ai/dsh-commands'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
 
 import * as PraxisDsh from '../src/index.ts'
@@ -37,6 +38,7 @@ test('registers the shared Praxis Skill without copying it into the DSH package'
 test('real Praxis DSH plugin fiber owns and removes the shared Skill contribution', async () => {
   const ctx = new Context()
   await ctx.plugin(AgentRegistry)
+  await ctx.plugin(CommandRuntime)
   await ctx.plugin(SkillRegistry)
   const fiber = await ctx.plugin(PraxisDsh)
 

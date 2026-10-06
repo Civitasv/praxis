@@ -52,6 +52,7 @@ from .state import (
     StateReadError,
     StateWriteError,
     UnsupportedFormatError,
+    disable_state,
     enable_state,
     load_state,
     pause_state,
@@ -94,6 +95,10 @@ def build_parser() -> argparse.ArgumentParser:
     enable = subparsers.add_parser("enable")
     _add_cwd(enable)
     enable.add_argument("--expected-revision", type=int)
+
+    disable = subparsers.add_parser("disable")
+    _add_cwd(disable)
+    disable.add_argument("--expected-revision", type=int)
 
     pause = subparsers.add_parser("pause")
     _add_cwd(pause)
@@ -269,6 +274,9 @@ def _run_command(args: argparse.Namespace) -> dict[str, Any]:
         )
     if args.command == "enable":
         state = enable_state(project_root, expected_revision=args.expected_revision)
+        return _success(project_root, state)
+    if args.command == "disable":
+        state = disable_state(project_root, expected_revision=args.expected_revision)
         return _success(project_root, state)
     if args.command == "pause":
         state = pause_state(project_root, args.expected_revision)
