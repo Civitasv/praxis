@@ -35,6 +35,27 @@ The **Codex package** GitHub Actions job verifies portable/compatibility manifes
 
 This repository validation does not claim that a user's Codex environment has trusted or deployed the hook scripts. Live-host hook execution remains dependent on Codex installation/runtime policy.
 
+## Cursor / CodeBuddy plugins
+
+Feature-07 validates both plugin packages against their current documented host contracts without requiring marketplace publication.
+
+```bash
+python -m unittest \
+  tests.test_shared_recovery_hook \
+  tests.test_cursor_integration \
+  tests.test_codebuddy_integration \
+  tests.test_agent_plugin_distribution -v
+python -m compileall -q plugins/shared plugins/cursor plugins/codebuddy
+```
+
+The **Cursor / CodeBuddy plugins** GitHub Actions job runs these checks on Python 3.10.
+
+Cursor supports automatic recovery context at session start. Its current native `beforeSubmitPrompt` output does not inject additional agent context, so Praxis uses that hook to refresh durable/project freshness only; it **does not inject** per-prompt recovery context on that path. The shared Praxis Skill and CLI remain available on demand.
+
+CodeBuddy supports `additionalContext` on both `SessionStart` and `UserPromptSubmit`, so Praxis refreshes and injects recovery context on both lifecycle edges.
+
+Both adapters reuse `praxis recovery-status`, cap automatic context at 3000 characters, ignore prompt/transcript text as approval evidence, and add no MCP server or MCP configuration.
+
 ## DeepSeek Harness integration validation
 
 Feature-06 tests the native Cordis adapter against the pinned current preview family:

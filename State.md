@@ -46,6 +46,14 @@ Feature-06: Implemented
 - Bounded DSH recovery context: Implemented
 - DSH integration CI validation: Implemented
 
+Feature-07: Implemented
+- Native Cursor plugin: Implemented
+- Native CodeBuddy plugin: Implemented
+- Shared host recovery CLI bridge: Implemented
+- Cursor session recovery and prompt freshness synchronization: Implemented
+- CodeBuddy session and prompt recovery: Implemented
+- Cursor / CodeBuddy package CI validation: Implemented
+
 ## Implemented state, project model, and Tutor decision core
 
 - `praxis/project.py` resolves the nearest Git/worktree boundary and rejects symlinked `.praxis` directories or state files.
@@ -59,7 +67,7 @@ Feature-06: Implemented
 - decision lifecycle is `open -> selected -> implemented -> verified`; `superseded` and `abandoned` are explicit terminal alternatives.
 - recovery, silence, restart, compaction, or an AI recommendation never advances decision lifecycle.
 - `skills/praxis/` provides the shared English, host-neutral Tutor policy.
-- `praxis/recovery.py` produces the compact host-neutral recovery snapshot used by the DSH adapter. It refreshes only machine-owned project freshness for enabled state and never creates/adopts tasks or advances decisions.
+- `praxis/recovery.py` produces the compact host-neutral recovery snapshot used by DSH, Cursor, and CodeBuddy adapters. It refreshes only machine-owned project freshness for enabled state and never creates/adopts tasks or advances decisions.
 
 ## Implemented Codex integration
 
@@ -90,6 +98,17 @@ Feature-06: Implemented
 - repository validation uses real current DSH/Cordis types and real AgentRegistry event dispatch plus a TypeScript-to-Python subprocess integration test.
 - the repository package remains private and is not claimed as npm-published or automatically installed into a user's DSH profile.
 
+## Implemented Cursor and CodeBuddy integration
+
+- `.cursor-plugin/plugin.json` and `.codebuddy-plugin/plugin.json` both reference the existing root `skills/praxis/` tree and host-specific hook files; neither duplicates the Skill or neutral Python core.
+- `plugins/shared/recovery_hook.py` invokes `praxis recovery-status` through direct argv with `shell: false`, validates the JSON response, renders deterministic context capped at 3000 characters, and provides a truthful manual-Skill fallback.
+- Cursor `sessionStart` injects recovery context using the current project/session identity.
+- Cursor `beforeSubmitPrompt` refreshes durable/project freshness and fails open, but does not claim unsupported per-prompt context injection.
+- CodeBuddy `SessionStart` and `UserPromptSubmit` both refresh and inject recovery context through the documented `additionalContext` envelope.
+- prompt and transcript text are never interpreted as decision approval.
+- installing either host plugin does not enable Praxis; uninitialized projects remain silent and paused projects remain paused.
+- Feature-07 adds no MCP server or MCP configuration.
+
 ## Validation contract
 
 Current repository validation commands are:
@@ -103,8 +122,8 @@ pnpm typecheck
 pnpm test:dsh
 ```
 
-GitHub Actions is authoritative for Python 3.10, Python 3.13, the dedicated Codex package job, and the TypeScript/DSH integration job with Python 3.10. A check is Green only when it actually runs successfully.
+GitHub Actions is authoritative for Python 3.10, Python 3.13, the dedicated Codex package job, the Cursor / CodeBuddy plugins job, and the TypeScript/DSH integration job with Python 3.10. A check is Green only when it actually runs successfully.
 
 ## External distribution status
 
-Praxis does not yet claim marketplace publication. The DSH package is repository-local/private and Feature-06 does not mutate DSH profiles or install itself into a host deployment. Codex hook trust/deployment likewise remains controlled by the host environment.
+Praxis does not yet claim marketplace publication. The DSH package is repository-local/private and Feature-06 does not mutate DSH profiles or install itself into a host deployment. Codex, Cursor, and CodeBuddy plugin installation/trust/deployment remain controlled by their host environments.
