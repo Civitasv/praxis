@@ -1,5 +1,7 @@
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -151,6 +153,27 @@ class CodexContextTests(unittest.TestCase):
                 context = build_context(self.event(root))
             self.assertIn("automatic recovery is unavailable", context)
             self.assertNotIn("Recovered task", context)
+
+
+    def test_hook_script_real_stdin_stdout_contract(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            enable_state(root)
+            script = Path(__file__).resolve().parents[1] / "plugins" / "codex" / "hooks" / "praxis_context.py"
+            event = self.event(root)
+            completed = subprocess.run(
+                [sys.executable, str(script)],
+                input=json.dumps(event),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(completed.stderr, "")
+            payload = json.loads(completed.stdout)
+            output = payload["hookSpecificOutput"]
+            self.assertEqual(output["hookEventName"], "SessionStart")
+            self.assertIn("Praxis is enabled", output["additionalContext"])
 
 
 if __name__ == "__main__":
