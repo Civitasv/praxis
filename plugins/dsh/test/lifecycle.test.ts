@@ -84,8 +84,10 @@ test('agent/created injects bounded DSH recovery using cwd and session identity'
         conversationId: 'session-a',
       }])
       assert.equal(injected.length, 1)
-      assert.equal(injected[0]?.source.kind, 'praxis-dsh')
-      assert.equal(injected[0]?.source.form, 'instructions')
+      const source = injected[0]?.source
+      assert.equal(source?.kind, 'praxis-dsh')
+      if (source?.kind !== 'praxis-dsh') throw new Error('expected praxis-dsh source')
+      assert.equal(source.form, 'instructions')
       assert.match(JSON.stringify(injected[0]?.content), /Praxis is enabled/)
       assert.match(JSON.stringify(injected[0]?.content), /Recovery is not approval/)
     } finally {
@@ -160,7 +162,11 @@ test('pre-step appends changed recovery context once without rewriting user mess
   let runs = 0
   const { ctx } = await lifecycleHarness(async () => {
     runs += 1
-    return enabledSnapshot(revision)
+    if (revision === 1) return enabledSnapshot(1)
+    return {
+      ...enabledSnapshot(revision),
+      project_model: { stale_sections: ['auth'], unknown_sections: [] },
+    }
   })
   try {
     const { agent } = stubAgent(ctx)
