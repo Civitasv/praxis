@@ -123,7 +123,7 @@ class RepositoryContractTests(unittest.TestCase):
     def test_readme_is_product_facing_and_routes_internals_to_docs(self) -> None:
         text = self.read("README.md")
         for expected in (
-            "Build with AI. Keep the judgment.",
+            "Build with AI. Develop taste.",
             "## Philosophy",
             "## What using Praxis feels like",
             "## Install",
@@ -135,7 +135,7 @@ class RepositoryContractTests(unittest.TestCase):
             "DeepSeek Harness / Cordis",
             "Cursor",
             "CodeBuddy",
-            "## What Praxis tries to preserve",
+            "## What Praxis helps you build",
             "Docs/Architecture/Overview.md",
             "Docs/Architecture/Harness%20Integration.md",
             "Docs/Specs/",

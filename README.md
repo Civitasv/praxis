@@ -4,10 +4,10 @@
 
 <h1 align="center">Praxis</h1>
 
-<p align="center"><strong>Build with AI. Learn from it.</strong></p>
+<p align="center"><strong>Build with AI. Develop taste.</strong></p>
 
 <p align="center">
-  A plugin for learning from your coding agent while building real software.
+  A plugin for developing engineering taste while coding with AI.
 </p>
 
 <p align="center">
@@ -18,13 +18,15 @@
 
 ## Philosophy
 
-AI can build faster than you can learn from what it builds.
+**AI makes implementation cheap. Taste is still earned.**
 
-Praxis extends the coding agent you already use. When a decision is worth understanding, it explains why the choice fits the project, what it trades away, and when the answer would change.
+Fast output is not the same as good engineering. If AI makes every meaningful choice before you understand it, you may ship faster today without getting better at choosing tomorrow.
 
-Routine work keeps moving. Important reasoning stays visible.
+Praxis extends the coding agent you already use. Routine work stays fast. When a decision can shape the system, Praxis slows down just enough to expose the reasoning, alternatives, tradeoffs, and consequences.
 
-**Build with AI. Keep the judgment.**
+That attention compounds. The more good decisions you understand, the faster you can recognize them yourself.
+
+**Slower at the right moment is faster over time.**
 
 ## What using Praxis feels like
 
@@ -66,21 +68,24 @@ Agent   ✓ Implemented
         ✓ Verified: history survived a Redis restart.
 ```
 
-Praxis keeps the learning inside the same workflow.
+Praxis keeps the learning inside the same workflow, so the decision becomes part of your own taste instead of disappearing into the implementation.
 
-## What Praxis tries to preserve
+## What Praxis helps you build
 
-Engineering taste grows by connecting decisions to consequences:
+Engineering taste is the ability to recognize better choices earlier.
+
+It grows by connecting decisions to consequences:
 
 ```text
-decide
+compare
+→ choose
 → implement
 → observe
-→ update your mental model
-→ decide better next time
+→ internalize
+→ choose better next time
 ```
 
-AI compresses implementation. Praxis keeps enough of the reasoning and feedback visible to learn from the work.
+Praxis does not try to slow down the whole task. It spends attention where understanding compounds, so future decisions become faster, better, and more independent.
 
 ## Install
 
@@ -161,7 +166,7 @@ Then run:
 
 </details>
 
-Once enabled, work normally. Praxis only steps in when there is something worth learning.
+Once enabled, work normally. Praxis only slows down decisions worth learning from.
 
 ## Commands
 
