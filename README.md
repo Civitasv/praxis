@@ -99,14 +99,14 @@ Then install the integration for the agent you use.
 
 ```bash
 codex plugin marketplace add Civitasv/praxis
-codex
+codex plugin add praxis@praxis
 ```
 
-Then install **Praxis** from the Plugins Directory with `/plugins`.
+Alternatively, install **Praxis** from the Plugins Directory with `/plugins`.
 
 **ChatGPT can install plugins too.** ChatGPT and Codex share the plugin directory. If Praxis is available in your account/workspace, install it from **Plugins** in ChatGPT. For the repository version before public-directory publication, a workspace admin can import the Praxis GitHub marketplace; local plugin testing is also supported in ChatGPT Desktop.
 
-Codex's current CLI can add and manage marketplace sources, but it **does not currently expose a non-interactive plugin install command**, so the final install action is UI-based. Installing a plugin on the web does not deploy local hook scripts into a local project runtime, so Praxis's project-local lifecycle behavior still needs a Codex/Work/Desktop execution environment that has the plugin files available.
+The current Codex CLI supports `plugin add`. Older versions without that command require installation through the Plugins Directory. Installing a plugin on the web does not deploy local hook scripts into a local project runtime, so Praxis's project-local lifecycle behavior still needs a Codex/Work/Desktop execution environment that has the plugin files available.
 
 ### Cursor
 
@@ -158,13 +158,20 @@ On Windows, use `py -m pip install --user --upgrade 'git+https://github.com/Civi
 
 ### Codex / ChatGPT
 
-Refresh the Codex marketplace snapshot:
+Refresh the Codex marketplace snapshot and installed plugin package:
 
 ```bash
 codex plugin marketplace upgrade praxis
+codex plugin add praxis@praxis
 ```
 
-Then open `/plugins` in Codex and refresh/reinstall Praxis if the UI offers an update.
+From a Praxis checkout, run the same steps with:
+
+```bash
+./scripts/reload-codex-plugin.sh
+```
+
+The script requires an existing `praxis` marketplace and a Codex CLI with `plugin add` support. If the CLI is not on `PATH`, set `CODEX_BIN` to its executable path. Open a new chat after refreshing; if the skill still does not appear, restart Codex. The script updates the installed package but does not reload the current chat or enable Praxis in the project. On older CLI versions, refresh/reinstall Praxis through `/plugins`.
 
 If your ChatGPT workspace imported the Praxis marketplace from GitHub, marketplace content has **daily sync** enabled by default. A workspace admin can request it immediately from **Workspace settings → Plugins → Marketplaces → Praxis → Sync now**.
 

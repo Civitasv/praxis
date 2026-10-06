@@ -88,7 +88,7 @@ class InstallationContractTests(unittest.TestCase):
         self.assertIn("Cursor", text)
         self.assertIn("DeepSeek Harness", text)
         self.assertIn("CodeBuddy", text)
-        self.assertIn("does not currently expose a non-interactive plugin install command", text)
+        self.assertIn("codex plugin add praxis@praxis", text)
         self.assertIn("does not currently expose a plugin-install subcommand", text)
 
     def test_readme_documents_plugin_update_paths(self) -> None:
