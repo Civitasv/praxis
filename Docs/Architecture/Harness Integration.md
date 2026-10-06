@@ -54,6 +54,14 @@ The TypeScript subprocess bridge uses **direct argv** execution with `execFile` 
 
 Cordis owns cleanup. Disposing the plugin removes listeners and the Skill contribution without touching `.praxis`.
 
+The repository root is also a DSH bundle. `package.json` points `dsh.bundle.patch` at `plugins/dsh/cordis.patch.yml`, which inserts the root `praxis` package so a profile can install the full repository—including the shared Skill and Python core—in one Git-backed dependency:
+
+```bash
+dsh plugin --profile web add github:Civitasv/praxis
+```
+
+Restart the selected profile after adding the bundle.
+
 ## Cursor — Feature-07
 
 Cursor integration is **translation-only** and uses the existing `praxis recovery-status` CLI through `plugins/shared/recovery_hook.py`.
@@ -100,7 +108,12 @@ CodeBuddy can load the Praxis checkout directly for a session:
 codebuddy --plugin-dir /path/to/praxis
 ```
 
-Use `/reload-plugins` after changing the checkout. Marketplace installation is not claimed by Feature-07.
+Use `/reload-plugins` after changing the checkout. For persistent installation from this repository, add its marketplace and install Praxis:
+
+```bash
+codebuddy plugin marketplace add Civitasv/praxis --name praxis
+codebuddy plugin install praxis@praxis
+```
 
 ## Cross-host state
 
@@ -108,4 +121,4 @@ Codex, DSH, Cursor, and CodeBuddy share the same project-local `.praxis/` record
 
 ## Distribution boundary
 
-Repository CI validates host adapters without claiming external deployment or marketplace publication. Host installation, enablement, and trust remain separate user/deployment actions.
+Repository CI validates host adapters and source-installable distribution metadata without claiming public marketplace or npm publication. Codex and CodeBuddy can consume repository marketplace catalogs, DSH can install the Git bundle, and Cursor can load the repository from its local plugin directory. Host enablement and trust remain separate user/deployment actions.
