@@ -1,0 +1,16 @@
+{
+  "name": "praxis",
+  "version": "0.1.0",
+  "description": "Build software with AI while keeping consequential engineering judgment visible.",
+  "author": {
+    "name": "Civitasv"
+  },
+  "repository": "https://github.com/Civitasv/praxis",
+  "skills": "./skills/",
+  "hooks": "./plugins/codex/hooks/hooks.json",
+  "interface": {
+    "displayName": "Praxis",
+    "shortDescription": "Build with AI. Keep the judgment.",
+    "longDescription": "Praxis keeps consequential engineering decisions, tradeoffs, verification, and recovery visible while coding agents handle execution."
+  }
+}
