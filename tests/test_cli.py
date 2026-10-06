@@ -95,6 +95,30 @@ class CliStateTests(CliBaselineTests):
             self.assertFalse(paused["active"])
             self.assertEqual(paused["state"]["revision"], 1)
 
+    def test_enable_disable_commands_do_not_require_revision(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result, enabled = self.run_json("enable", "--cwd", tmp)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(enabled["active"])
+
+            result, disabled = self.run_json("disable", "--cwd", tmp)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(disabled["active"])
+            self.assertEqual(disabled["state"]["revision"], 1)
+
+            result, enabled_again = self.run_json("enable", "--cwd", tmp)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(enabled_again["active"])
+            self.assertEqual(enabled_again["state"]["revision"], 2)
+
+    def test_disable_uninitialized_project_is_read_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result, payload = self.run_json("disable", "--cwd", tmp)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(payload["active"])
+            self.assertIsNone(payload["state"])
+            self.assertFalse((Path(tmp) / ".praxis").exists())
+
     def test_task_create_and_update_round_trip(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             self.run_json("enable", "--cwd", tmp)
