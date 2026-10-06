@@ -133,7 +133,6 @@ class RepositoryContractTests(unittest.TestCase):
             "## Philosophy",
             "## What using Praxis feels like",
             "## Install",
-            "What other options do I have?",
             "/praxis enable",
             "/praxis:enable",
             "$praxis:praxis-enable",

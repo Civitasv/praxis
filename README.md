@@ -34,56 +34,57 @@ That attention compounds. The more good decisions you understand, the faster you
 
 ## What using Praxis feels like
 
-Without Praxis:
+You lead the meaningful choices; Praxis guides your reasoning, and your coding agent implements the scope you delegate. That includes both **product design**—what people experience—and **technical design**—how responsibilities, state, and data flow support that experience.
 
-```text
-You     Add persistent chat history.
+Suppose you want persistent chat history in a local, single-user app:
 
-Agent   I’ll use the database as the source of truth
-        and Redis as a cache.
+> **You:** Keep my chat history after restarting the app.
+>
+> **(o.o) Understanding**
+>
+> Persistence: Should messages survive only an app restart, or also move between devices?
+>
+> **You:** Just this device for now.
+>
+> **(o-o) Designing**
+>
+> Product design / Sending: What should the user see while a message is being saved, and if saving fails?
+>
+> **You:** Show it immediately as pending. If saving fails, keep the text and let me retry.
+>
+> **(o-o) Designing**
+>
+> Technical design / Storage: How would you store the messages and decide when a pending message becomes saved?
+>
+> **You:** Use SQLite. Mark the message saved immediately, then write it in the background.
+>
+> **(o_^) Reviewing**
+>
+> Acknowledgment: SQLite fits local storage, and keeping failed input supports retry. But marking a message saved before the write succeeds creates a gap: the app could close while a “saved” message exists only in memory. How would you change that order?
+>
+> **You:** Keep it pending until the database write succeeds. On failure, leave it available for retry.
+>
+> **(^_~) Revising**
+>
+> Write order: That keeps the immediate feedback you wanted while making “saved” reflect a completed write. Check that saved messages survive a restart; separately simulate a failed write to check that the message stays unsaved and available for retry.
+>
+> **You:** Implement that design and run the restart and failed-write checks.
+>
+> **(^_^) Implementing**
+>
+> Result: Implemented the pending, saved, and retry behavior. Saved messages survived the restart check, and a simulated failed write left the message unsaved and available for retry. Sudden power loss was not tested. The useful distinction: immediate feedback can precede persistence; a “saved” acknowledgment must follow it.
 
-        ✓ Implemented
-```
+This is an illustrative conversation, not a recorded acceptance test.
 
-With Praxis:
+The five nodes describe the current activity, not a fixed sequence. A technical constraint can send you back to understanding the requirement; a revision can lead to another review. Titles follow your conversation's language.
 
-```text
-You     Add persistent chat history.
-
-Agent   What should persistence guarantee, and how would you store the history?
-
-You     Keep it after restarts. I'd put messages in Redis because it is fast.
-
-Agent   Redis durability depends on configuration. With snapshots, a failure
-        can lose messages since the last snapshot. Is that acceptable here?
-
-You     No. What other options do I have?
-
-Agent   A durable database can own the messages; Redis could be an optional
-        cache. This adds a write path, but losing the cache needn't lose history.
-        For this scope, using only the database would also avoid cache complexity.
-
-You     Use only the database first. Save a message before acknowledging it,
-        and test that acknowledged messages survive a restart.
-
-Agent   That addresses the durability gap. This step will add storage and
-        restart checks; caching remains outside the scope.
-
-You     Implement that design.
-
-Agent   ✓ Implemented the agreed storage behavior.
-        ✓ Verified: acknowledged history survived a restart.
-```
-
-This example illustrates the intended interaction; it is not a recorded acceptance test.
-
-Praxis keeps the learning inside the same workflow, so the decision becomes part of your own taste instead of disappearing into the implementation.
+When you need help, Praxis explains the missing concept or compares credible options and their tradeoffs. Once you select a design and delegate implementation, routine work moves ahead. The learning comes from connecting **your reasoning → the selected design → the observed result**.
 
 ## What Praxis helps you build
 
 Engineering taste is the ability to recognize better choices earlier.
 
-It grows by connecting decisions to consequences:
+It grows through product choices such as interaction and recovery behavior, and technical choices such as ownership, module boundaries, and failure handling. Each connects a decision to its consequences:
 
 ```text
 understand
@@ -96,6 +97,8 @@ understand
 → internalize
 → choose better next time
 ```
+
+This loop can return to earlier discussions as requirements or evidence change.
 
 Praxis does not try to slow down the whole task. It spends attention where understanding compounds, so future decisions become faster, better, and more independent.
 
@@ -120,6 +123,8 @@ Then add Praxis to the coding agent you use.
 codex plugin marketplace add Civitasv/praxis
 codex plugin add praxis@praxis
 ```
+
+In Codex settings, open Hooks and review and trust the Praxis hooks to allow automatic tutoring context.
 
 Enable it in the project:
 
