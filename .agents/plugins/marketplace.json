@@ -1,0 +1,21 @@
+{
+  "name": "praxis",
+  "interface": {
+    "displayName": "Praxis"
+  },
+  "plugins": [
+    {
+      "name": "praxis",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/Civitasv/praxis.git",
+        "ref": "master"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
