@@ -2,7 +2,7 @@
 
 ## Objective
 
-Turn Praxis from a reliable project-state system into a persistent AI Tutor that keeps the human inside consequential engineering judgment while AI handles most implementation work.
+Turn Praxis from a reliable project-state system into a persistent AI Tutor that helps the human develop engineering taste while AI handles most implementation work.
 
 Feature-04 establishes durable decision provenance, task-linked decision lifecycle state, decision-level concurrency, deterministic decision history projection, adapter-ready JSON commands, and the shared Tutor Skill/behavior contract.
 
@@ -231,27 +231,32 @@ Praxis follows a dynamic loop:
 ```text
 Understand
 -> Inspect verified project facts
--> Surface consequential decisions
--> Discuss / teach / challenge
--> Agree
+-> Notice a taste-bearing decision
+-> Compare credible options
+-> Explain the recommendation and boundary
+-> Establish enough understanding
+-> Select
 -> Implement
--> Verify
--> Reflect
+-> Verify consequences
+-> Distill
 ```
 
 Behavior requirements:
 
 - viable user designs are respected and refined, not replaced because the AI prefers another pattern;
+- a surfaced choice must contain a distinction worth learning, not merely multiple possible implementations;
+- for meaningful alternatives, Praxis explains what each optimizes for, what it costs, why the recommendation fits the verified context, and when another option would be better;
 - concrete false assumptions/material risks are surfaced before dependent implementation;
 - unresolved risk blocks only affected work;
 - mechanical details proceed without repeated confirmation once the surrounding design is settled;
-- when the user does not know, Praxis explains only enough background to enable the next meaningful tradeoff, may give a default recommendation, and does not deadlock into repeated questioning;
-- reflection connects decision -> implementation -> observed verification result rather than producing a generic lesson;
+- when the user does not know, Praxis teaches the smallest useful mental model for the distinction, may give a default recommendation, and does not deadlock into repeated questioning or forced paraphrasing;
+- verification targets the consequence the selected decision was intended to create when practical; green tests alone are not treated as proof of good design;
+- distillation connects alternatives -> reason -> implementation -> observed consequence -> reusable heuristic when evidence supports one;
 - Praxis does not claim mastery or understanding scores.
 
 ## Recovery contract
 
-Durable task/decision state is sufficient to recover the current judgment boundary without full transcript storage.
+Durable task/decision state is sufficient to recover the current decision boundary without full transcript storage.
 
 Recovery may summarize open decisions but cannot:
 
@@ -307,11 +312,15 @@ Decision operations expose stable JSON success/error contracts with no Harness-s
 
 ### AC-009 — Tutor policy handles uncertainty
 
-Skill/behavior contract tests cover `I don't know` and require just-enough teaching plus a meaningful tradeoff rather than repeated Socratic prompts. Real host/model compliance is deferred to Feature-05/06 acceptance.
+Skill/behavior contract tests cover `I don't know` and require just-enough teaching of the meaningful distinction plus a concrete recommendation/boundary rather than repeated Socratic prompts. Real host/model compliance is deferred to Feature-05/06 acceptance.
 
 ### AC-010 — implementation becomes feedback
 
 The encoded Tutor policy connects the selected decision to implementation and real verification results, including cases where verification contradicts the original expectation.
+
+### AC-011 — Tutor policy develops taste
+
+Skill/behavior contract tests require comparison of credible alternatives, explicit recommendation boundaries, verification of intended consequences where practical, and evidence-backed distillation into reusable heuristics.
 
 ## Implementation order
 
