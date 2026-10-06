@@ -78,11 +78,12 @@ test('agent/created injects bounded DSH recovery using cwd and session identity'
     const detach = ctx.agents.enter(agent, undefined)
     try {
       await ctx.agents.announce(agent, 'resume')
-      assert.deepEqual(calls, [{
-        cwd: '/workspace/repo',
-        host: 'dsh',
-        conversationId: 'session-a',
-      }])
+      assert.equal(calls.length, 1)
+      assert.equal(calls[0]?.cwd, '/workspace/repo')
+      assert.equal(calls[0]?.host, 'dsh')
+      assert.equal(calls[0]?.conversationId, 'session-a')
+      assert.ok(calls[0]?.signal)
+      assert.equal(calls[0]?.signal?.aborted, false)
       assert.equal(injected.length, 1)
       const source = injected[0]?.source
       assert.equal(source?.kind, 'praxis-dsh')
