@@ -132,7 +132,9 @@ When automatic hooks cannot run, the shared Praxis Skill remains the documented 
 
 The repository root `plugin.json` is canonical.
 
-`.codex-plugin/plugin.json` is a compatibility manifest describing the same shared Skill and hook package.
+Its `extensions.com.openai` object is the complete OpenAI-specific overlay for the canonical package. It is not merged with the compatibility overlay.
+
+`.codex-plugin/plugin.json` is a compatibility manifest describing the same shared Skill and hook package for fallback consumers.
 
 Tests verify:
 
@@ -147,16 +149,20 @@ Tests verify:
 
 It must:
 
-- cover SessionStart startup/resume/clear/compact;
-- cover UserPromptSubmit;
-- invoke the thin Python adapter without shell-interpolating host/user text;
-- declare bounded additional context when supported.
+- match SessionStart `source` exactly across startup/resume/clear/compact;
+- cover UserPromptSubmit without relying on prompt matching;
+- invoke the thin Python adapter through a static plugin-root-based command;
+- never interpolate prompt/cwd/session/event values into the command string;
+- declare a positive `additionalContextLimit`;
+- provide a Windows command override when required for portable execution.
 
 ## Adapter contract
 
 `plugins/codex/hooks/praxis_context.py`:
 
 - accepts Codex lifecycle payload from stdin;
+- uses only documented fields needed by Feature-05: `hook_event_name`, `cwd`, `session_id`, and SessionStart `source`;
+- deliberately ignores `transcript_path`;
 - validates enough input to operate safely;
 - discovers the current Praxis project through neutral project rules;
 - reads neutral state;
@@ -164,6 +170,7 @@ It must:
 - selects exact/candidate task context without mutating recovery lifecycle;
 - summarizes open decisions and blocked scopes;
 - emits deterministic bounded additional context;
+- emits structured Codex hook JSON using `hookSpecificOutput.hookEventName` plus `additionalContext`;
 - emits a truthful manual-fallback notice on recoverable automatic-recovery failure.
 
 It must not import a Codex SDK into `praxis/` or add host-specific state fields solely for Codex.
