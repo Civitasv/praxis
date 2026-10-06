@@ -60,8 +60,12 @@ def _valid_event(event: object) -> dict[str, Any] | None:
     return event
 
 
+def _inline_text(value: object) -> str:
+    return " ".join(str(value).split())
+
+
 def _task_line(task_id: str, task: dict[str, Any]) -> str:
-    title = task.get("title") or "(untitled)"
+    title = _inline_text(task.get("title") or "(untitled)")
     return (
         f"{task_id} — {title} "
         f"[stage={task.get('stage', 'unknown')}, status={task.get('status', 'unknown')}]"
@@ -167,12 +171,12 @@ def build_context(event: dict[str, Any]) -> str | None:
             list_open_decisions(state, task_id=context_task_id).items()
         ):
             lines.append(
-                f"Open decision: {decision_id} — {record['title']} "
+                f"Open decision: {decision_id} — {_inline_text(record['title'])} "
                 f"[class={record['class']}]"
             )
         blocked = decision_blocked_scopes(state, task_id=context_task_id)
         if blocked:
-            lines.append("Blocked scopes: " + ", ".join(blocked))
+            lines.append("Blocked scopes: " + ", ".join(_inline_text(scope) for scope in blocked))
 
     try:
         model = project_model_status(project_root)
@@ -181,6 +185,13 @@ def build_context(event: dict[str, Any]) -> str | None:
     stale = model.get("stale_sections", [])
     if stale:
         lines.append("Stale project sections: " + ", ".join(stale))
+    unknown = [
+        item["id"]
+        for item in model.get("sections", [])
+        if isinstance(item, dict) and item.get("status") == "unknown"
+    ]
+    if unknown:
+        lines.append("Unknown project sections: " + ", ".join(unknown))
 
     return _bounded_context(lines)
 
