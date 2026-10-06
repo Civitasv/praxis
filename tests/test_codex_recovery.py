@@ -113,7 +113,8 @@ class CodexRecoveryTests(unittest.TestCase):
             context = build_context(self.event(root, session_id="new-session"))
             self.assertIn("Multiple pending task candidates", context)
             self.assertIn("ask the user which task to continue", context)
-            self.assertLess(context.index(first), context.index(second))
+            ordered = sorted([first, second])
+            self.assertLess(context.index(ordered[0]), context.index(ordered[1]))
 
     def test_open_decisions_and_blocked_scopes_are_summarized_for_recovered_task_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
