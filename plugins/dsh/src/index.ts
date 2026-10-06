@@ -2,6 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-skill'
 
+import { registerPraxisLifecycle } from './lifecycle.ts'
 import { registerPraxisSkill } from './skill.ts'
 
 export const adapterMetadata = {
@@ -15,4 +16,5 @@ export const inject = ['agents', 'skills'] as const
 
 export function apply(ctx: Context): void {
   registerPraxisSkill(ctx)
+  registerPraxisLifecycle(ctx)
 }
