@@ -7,8 +7,8 @@
 <p align="center"><strong>Build with AI. Keep the judgment.</strong></p>
 
 <p align="center">
-  A plugin for coding agents that makes consequential AI conclusions understandable<br>
-  before the agent acts on them.
+  A plugin for people who want to learn from their coding agent while building real software.<br>
+  Praxis makes important AI conclusions understandable before implementation moves on.
 </p>
 
 <p align="center">
@@ -19,15 +19,15 @@
 
 ## Philosophy
 
-**The new bottleneck is judgment.**
+**Shipping faster should not mean learning less.**
 
-Coding agents can now produce working software without exposing much of the reasoning that shaped it.
+Coding agents can now produce working software while skipping much of the experience that used to build engineering judgment.
 
-That is useful. It also creates a strange failure mode:
+That is useful if the only goal is output. But many people also want to get better at the craft while they build.
 
-> You can get much better at producing software without getting much better at engineering it.
+> Praxis is for people who want the leverage of AI without giving up the learning that comes from understanding important decisions.
 
-Praxis is a plugin for that gap.
+It is a plugin for that gap.
 
 It extends the coding agent you already use rather than introducing another agent or a separate workflow. Its core Tutor behavior is implemented as a shared skill, with a small host-neutral core and thin host integrations around it.
 
@@ -76,24 +76,26 @@ Agent   Exactly.
 
 It is still the same coding agent doing the work.
 
-Praxis changes how the agent handles conclusions worth understanding: expose the reasoning, tradeoff, and boundary; make sure the mental model is clear; then continue.
+The difference is that useful learning is pulled out of the real task instead of being skipped. Praxis turns consequential conclusions into small teaching moments: why this choice fits the project, what it trades away, and when a different answer would be better.
 
-## What the plugin adds
+You do not need to turn the session into a lesson or know the right question to ask. The plugin should notice what is worth understanding and explain only enough to make that part of the work yours too.
 
-| Situation | Agent with Praxis |
+## Learn while building
+
+| During real work | Agent with Praxis |
 | --- | --- |
-| Mechanical implementation | Keeps moving |
-| Consequential conclusion | Explains why it follows |
-| Important tradeoff | Makes the cost explicit |
-| Context-dependent conclusion | States where it stops being true |
-| You say "I don't know" | Fills the missing context without turning it into a quiz |
-| Implementation finishes | Verifies whether reality supported the conclusion |
+| Routine implementation | Keeps moving |
+| Important engineering conclusion | Explains the reasoning |
+| New concept you may not know yet | Builds the minimum useful mental model |
+| Meaningful tradeoff | Shows what you gain and give up |
+| Context-dependent answer | Explains when the conclusion changes |
+| Implementation finishes | Connects the result back to the reasoning |
 
 The loop is simple:
 
-**conclude → explain → understand → implement → verify**
+**build → notice → explain → understand → verify**
 
-Praxis should make the agent more productive **without making you less capable**.
+Praxis is not trying to replace documentation, courses, or deliberate study. It makes the project you are already building a better place to learn.
 
 ## Install
 
@@ -190,7 +192,7 @@ Add retries to the payment workflow.
 Refactor authentication so web and CLI share the same session model.
 ```
 
-Praxis should intervene only when there is something worth learning from.
+Praxis should stay quiet when there is nothing useful to learn and step in when the work contains a decision, concept, or consequence worth understanding.
 
 ## Not a quiz. Not a second agent.
 
@@ -204,7 +206,7 @@ The agent should explain just enough for the next important conclusion to make s
 
 ## What Praxis tries to preserve
 
-For most of software history, engineering judgment was built through repetition:
+For most of software history, learning and building were tightly coupled. Engineering judgment was built through repetition:
 
 ```text
 make a decision
@@ -214,9 +216,9 @@ make a decision
 → make a better decision next time
 ```
 
-AI compresses the implementation step dramatically.
+AI compresses the implementation step dramatically — and can accidentally compress away the learning that came with it.
 
-Praxis exists so it does not accidentally compress away the learning loop too.
+Praxis exists for users who want to keep that learning loop alive while still using AI at full speed.
 
 The durable output is not only the diff. It is also:
 
