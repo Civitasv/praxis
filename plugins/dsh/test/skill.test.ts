@@ -3,7 +3,10 @@ import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 
 import { Context } from '@deepseek-ai/cordis'
+import AgentRegistry from '@deepseek-ai/dsh-agent'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
+
+import * as PraxisDsh from '../src/index.ts'
 
 import { registerPraxisSkill, sharedSkillDirectory, sharedSkillPath } from '../src/skill.ts'
 
@@ -27,6 +30,20 @@ test('registers the shared Praxis Skill without copying it into the DSH package'
 
   dispose()
   assert.equal(await ctx.skills.get('praxis'), undefined)
+  await ctx.fiber.dispose()
+})
+
+
+test('real Praxis DSH plugin fiber owns and removes the shared Skill contribution', async () => {
+  const ctx = new Context()
+  await ctx.plugin(AgentRegistry)
+  await ctx.plugin(SkillRegistry)
+  const fiber = await ctx.plugin(PraxisDsh)
+
+  assert.ok(await ctx.skills.get('praxis'))
+  await fiber.dispose()
+  assert.equal(await ctx.skills.get('praxis'), undefined)
+
   await ctx.fiber.dispose()
 })
 
