@@ -67,7 +67,7 @@ jobs:
         run: python -m compileall -q plugins/codex praxis
 
   typescript:
-    name: TypeScript / DSH seam
+    name: TypeScript / DSH integration
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -85,6 +85,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.20.0
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
