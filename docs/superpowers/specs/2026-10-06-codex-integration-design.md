@@ -44,6 +44,8 @@ praxis/
 
 The root `plugin.json` is the canonical portable manifest. `.codex-plugin/plugin.json` is a compatibility fallback.
 
+For OpenAI-specific settings, the canonical root manifest uses `extensions.com.openai`. When that object is present, it is the complete OpenAI overlay for the canonical package; it is not merged with `.codex-plugin/plugin.json`. The compatibility manifest therefore exists for hosts/tooling that consume the fallback layout, not as a second simultaneously-active overlay.
+
 The shared Skill and neutral Python package remain single-source files in their existing locations; Feature-05 does not duplicate them under `plugins/codex/`.
 
 ## 4. Lifecycle events
@@ -63,16 +65,33 @@ plugins/codex/hooks/praxis_context.py
 
 The adapter reads the host event payload, invokes neutral Praxis state/CLI logic, and emits only bounded context for Codex.
 
-It does not parse transcript history.
+For `SessionStart`, the matcher is applied to `source` and covers exactly `startup|resume|clear|compact`. `UserPromptSubmit` does not depend on a matcher.
+
+Structured success output uses the Codex hook-specific JSON shape:
+
+```json
+{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": "..."
+  }
+}
+```
+
+or the same structure with `hookEventName: "UserPromptSubmit"` for prompt submission.
+
+The adapter does not parse transcript history.
 
 ## 5. Host input
 
-The adapter may consume host lifecycle metadata such as:
+The adapter consumes the documented common hook fields it needs:
 
-- hook event name;
-- current working directory;
-- Codex session identity;
-- SessionStart source.
+- `hook_event_name`;
+- `cwd`;
+- `session_id`;
+- `source` for SessionStart.
+
+It deliberately ignores `transcript_path`.
 
 A prompt field may exist in `UserPromptSubmit`, but Feature-05 does not use prompt text to infer approval, intent, selection, implementation, or verification.
 
@@ -185,7 +204,7 @@ MAX_CONTEXT_CHARS = 3000
 
 Ordering/truncation must be deterministic. Context growth in durable state must not cause unbounded prompt injection.
 
-The hook declaration should also use the Codex host-side additional-context limit when supported.
+The hook declaration also sets a positive Codex `additionalContextLimit`. The Praxis adapter's 3000-character hard cap remains the product guarantee; the host limit is a second safety boundary expressed in approximate tokens.
 
 ## 12. Failure behavior
 
@@ -247,11 +266,12 @@ Manifest tests validate path existence and package consistency without requiring
 
 - `SessionStart` for startup/resume/clear/compact;
 - `UserPromptSubmit`;
-- direct invocation of `praxis_context.py`;
+- direct invocation of `praxis_context.py` through `${PLUGIN_ROOT}`;
 - bounded additional context;
-- no shell-interpolated user input.
+- no interpolation of prompt text, cwd, session id, or other host/user event values into the command string;
+- a Windows command override when needed for portable execution.
 
-The hook adapter must be executable through an argument-safe host command declaration.
+The hook schema represents command handlers as command strings, so "argument-safe" here means the command is static apart from the host-owned plugin-root environment expansion. All untrusted/event data arrives only through stdin JSON.
 
 ## 16. Neutral-core boundary
 
