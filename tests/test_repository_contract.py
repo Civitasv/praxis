@@ -27,6 +27,7 @@ class RepositoryContractTests(unittest.TestCase):
             "Docs/Specs/Feature-04 Tutor Decision Loop.md",
             "Docs/Specs/Feature-05 Codex Integration.md",
             "Docs/Specs/Feature-06 DSH Integration.md",
+            "Docs/Specs/Feature-07 Cursor and CodeBuddy Integration.md",
             ".github/pull_request_template.md",
         ]
         for relative in required:
@@ -68,13 +69,18 @@ class RepositoryContractTests(unittest.TestCase):
             "plugins/dsh/src/praxis-cli.ts",
             "plugins/dsh/src/context.ts",
             "plugins/dsh/src/skill.ts",
+            ".cursor-plugin/plugin.json",
+            "plugins/cursor/hooks/",
+            ".codebuddy-plugin/plugin.json",
+            "plugins/codebuddy/hooks/",
+            "plugins/shared/recovery_hook.py",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, text)
 
-    def test_state_records_features_one_through_six_implemented(self) -> None:
+    def test_state_records_features_one_through_seven_implemented(self) -> None:
         text = self.read("State.md")
-        for feature in range(1, 7):
+        for feature in range(1, 8):
             self.assertIn(f"Feature-{feature:02d}: Implemented", text)
         for capability in (
             "Durable decision provenance",
@@ -92,9 +98,13 @@ class RepositoryContractTests(unittest.TestCase):
             "DSH agent lifecycle recovery",
             "DSH direct-argv Python bridge",
             "Bounded DSH recovery context",
+            "Native Cursor plugin",
+            "Native CodeBuddy plugin",
+            "Shared host recovery CLI bridge",
         ):
             self.assertIn(f"{capability}: Implemented", text)
         self.assertNotIn("Feature-06: Pending", text)
+        self.assertNotIn("Feature-07: Pending", text)
 
     def test_state_lists_current_validation_commands(self) -> None:
         text = self.read("State.md")
@@ -118,6 +128,8 @@ class RepositoryContractTests(unittest.TestCase):
             "python -m praxis status --cwd",
             "Codex",
             "DeepSeek Harness / Cordis",
+            "Cursor",
+            "CodeBuddy",
             "## What Praxis tries to preserve",
             "Docs/Architecture/Overview.md",
             "Docs/Architecture/Harness%20Integration.md",
@@ -158,6 +170,19 @@ class RepositoryContractTests(unittest.TestCase):
             "translation-only",
             "direct argv",
             "praxis-dsh",
+        ):
+            self.assertIn(expected, text)
+
+    def test_harness_architecture_records_cursor_and_codebuddy_boundaries(self) -> None:
+        text = self.read("Docs/Architecture/Harness Integration.md")
+        for expected in (
+            "Cursor — Feature-07",
+            "CodeBuddy — Feature-07",
+            "beforeSubmitPrompt",
+            "UserPromptSubmit",
+            "does not support per-prompt context injection",
+            "recovery-status",
+            "No MCP",
         ):
             self.assertIn(expected, text)
 
