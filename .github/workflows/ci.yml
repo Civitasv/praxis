@@ -39,6 +39,9 @@ jobs:
       - name: Compile Python sources
         run: python -m compileall -q praxis tests
 
+      - name: Build installable Praxis CLI wheel
+        run: python -m pip wheel --no-deps --no-build-isolation . -w /tmp/praxis-wheel
+
   codex:
     name: Codex package
     runs-on: ubuntu-latest
