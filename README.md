@@ -171,7 +171,7 @@ From a Praxis checkout, run the same steps with:
 ./scripts/reload-codex-plugin.sh
 ```
 
-The script requires an existing `praxis` marketplace and a Codex CLI with `plugin add` support. If the CLI is not on `PATH`, set `CODEX_BIN` to its executable path. Open a new chat after refreshing; if the skill still does not appear, restart Codex. The script updates the installed package but does not reload the current chat or enable Praxis in the project. On older CLI versions, refresh/reinstall Praxis through `/plugins`.
+The script requires an existing `praxis` marketplace and a Codex CLI with `plugin add` support. It uses `codex` from `PATH` or automatically finds the CLI bundled in ChatGPT.app under `/Applications` or `~/Applications` on macOS. Set `CODEX_BIN` to override the executable path. Open a new chat after refreshing; if the skill still does not appear, restart Codex. The script updates the installed package but does not reload the current chat or enable Praxis in the project. On older CLI versions, refresh/reinstall Praxis through `/plugins`.
 
 If your ChatGPT workspace imported the Praxis marketplace from GitHub, marketplace content has **daily sync** enabled by default. A workspace admin can request it immediately from **Workspace settings → Plugins → Marketplaces → Praxis → Sync now**.
 
