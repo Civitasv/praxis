@@ -1,0 +1,28 @@
+{
+  "description": "Praxis CodeBuddy lifecycle context hooks.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^(startup|resume|clear|compact)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CODEBUDDY_PLUGIN_ROOT}/plugins/codebuddy/hooks/praxis_context.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CODEBUDDY_PLUGIN_ROOT}/plugins/codebuddy/hooks/praxis_context.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
