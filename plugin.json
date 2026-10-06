@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "praxis",
+  "version": "0.1.0",
+  "description": "Build software with AI while keeping consequential engineering judgment visible.",
+  "repository": "https://github.com/Civitasv/praxis",
+  "keywords": ["coding", "tutor", "engineering", "codex"],
+  "extensions": {
+    "com.openai": {
+      "hooks": "./plugins/codex/hooks/hooks.json",
+      "interface": {
+        "displayName": "Praxis",
+        "shortDescription": "Build with AI. Keep the judgment.",
+        "longDescription": "Praxis keeps consequential engineering decisions, tradeoffs, verification, and recovery visible while coding agents handle execution."
+      }
+    }
+  }
+}

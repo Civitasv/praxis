@@ -1,0 +1,32 @@
+{
+  "description": "Praxis Codex lifecycle context hooks.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "^(startup|resume|clear|compact)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/plugins/codex/hooks/praxis_context.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\plugins\\codex\\hooks\\praxis_context.py\"",
+            "statusMessage": "Restoring Praxis context",
+            "additionalContextLimit": 1200
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${PLUGIN_ROOT}/plugins/codex/hooks/praxis_context.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\plugins\\codex\\hooks\\praxis_context.py\"",
+            "statusMessage": "Synchronizing Praxis context",
+            "additionalContextLimit": 1200
+          }
+        ]
+      }
+    ]
+  }
+}

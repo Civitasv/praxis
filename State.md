@@ -29,7 +29,14 @@ Feature-04: Implemented
 - Decision JSON CLI: Implemented
 - Shared Praxis Tutor Skill: Implemented
 
-Feature-05: Pending — Codex integration
+Feature-05: Implemented
+- Portable Codex plugin package: Implemented
+- SessionStart and UserPromptSubmit recovery: Implemented
+- Project freshness synchronization: Implemented
+- Bounded Codex recovery context: Implemented
+- Manual Skill fallback: Implemented
+- Codex package CI validation: Implemented
+
 Feature-06: Pending — DSH integration
 
 ## Implemented state, project model, and Tutor decision core
@@ -37,21 +44,29 @@ Feature-06: Pending — DSH integration
 - `praxis/project.py` resolves the nearest Git/worktree boundary and rejects symlinked `.praxis` directories or state files.
 - `.praxis/state.json` remains format version `1` and is the sole machine-readable authority for enabled/paused state, tasks, optional verified `project_model`, and optional durable decision records.
 - writes use a bounded lock directory plus temporary-file flush/fsync and atomic replacement.
-- Feature-02 state mutations use compare-and-swap expected revisions; stale writers receive a conflict instead of overwriting newer state.
-- `mutate_latest_state` supports latest-state machine maintenance and performs no write/revision increment when the semantic state is unchanged.
-- `praxis/tasks.py` owns core task ids and task lifecycle through the shared state mutation path.
-- `praxis/fingerprints.py` normalizes project-relative evidence paths, prevents evidence from escaping the project or entering `.praxis` / `.git`, and computes SHA-256 from exact source bytes.
-- `praxis/project_map.py` stores caller-supplied semantic sections while the core owns project-model revisions, section revisions, evidence fingerprints, freshness status, and stale reasons.
-- section-level CAS permits unrelated project-model sections to progress despite global state revision movement while stale same-section writers conflict.
-- stale scans mark only sections whose source evidence changed, disappeared, became unsafe, or became unreadable; stale semantic sections require explicit refresh rather than silently becoming verified again.
-- `.praxis/code.md` is a deterministic, atomically written projection of authoritative `state.json.project_model`; missing or out-of-sync output can be detected and rebuilt.
-- `praxis/decisions.py` owns durable engineering/architectural decision ids, provenance fields, aggregate/record revisions, lifecycle transitions, task linkage, open-decision queries, and blocked-scope summaries.
-- decision lifecycle is `open -> selected -> implemented -> verified`; `superseded` and `abandoned` are explicit terminal alternatives. Recovery, silence, or AI recommendation never advances lifecycle state.
-- decision-level CAS permits unrelated decisions to progress despite global state revision movement while stale same-decision writers conflict.
-- `tasks.pending_choices` remains compatibility/presentation metadata; durable decision records with `status == open` are authoritative for unresolved consequential choices.
-- `.praxis/decisions.md` is a deterministic, atomically written projection of authoritative `state.json.decisions`; it is never parsed back into state and can be deleted/rebuilt.
-- `praxis decision-status|decision-create|decision-select|decision-implemented|decision-verify|decision-supersede|decision-abandon|decision-evidence|decision-render` expose stable JSON behavior for future host adapters.
-- `skills/praxis/` provides the shared English, host-neutral Tutor policy for consequential decisions, just-enough teaching, recovery, blocked scopes, verification, and reflection.
+- state, section, and decision concurrency semantics remain owned by the neutral Python core.
+- `praxis/fingerprints.py` owns normalized source fingerprints and `praxis/project_map.py` owns stale detection.
+- stale semantic project sections require explicit semantic refresh and are never auto-cleared merely because source bytes later match again.
+- `.praxis/code.md` and `.praxis/decisions.md` are deterministic projections and are never parsed back into authoritative state.
+- `praxis/decisions.py` owns durable engineering/architectural decision provenance, lifecycle, task linkage, open-decision queries, and blocked scopes.
+- decision lifecycle is `open -> selected -> implemented -> verified`; `superseded` and `abandoned` are explicit terminal alternatives.
+- recovery, silence, restart, compaction, or an AI recommendation never advances decision lifecycle.
+- `skills/praxis/` provides the shared English, host-neutral Tutor policy.
+
+## Implemented Codex integration
+
+- the repository root `plugin.json` is the canonical portable Agent Plugins manifest; `.codex-plugin/plugin.json` is the Codex compatibility fallback.
+- both package surfaces reference the existing shared `skills/praxis/` tree and `plugins/codex/hooks/hooks.json`; Feature-05 does not duplicate the Skill or neutral core.
+- `plugins/codex/hooks/hooks.json` declares `SessionStart` for `startup|resume|clear|compact` and `UserPromptSubmit`.
+- `plugins/codex/hooks/praxis_context.py` is a thin translation adapter. Event/user data arrives over stdin JSON rather than being interpolated into hook commands.
+- plugin installation does not enable Praxis. An uninitialized project is silent and creates no `.praxis/` state. A paused project remains paused.
+- enabled-project lifecycle events reuse Feature-03 freshness checks before recovery context is built.
+- exact Codex session linkage can recover an existing non-complete task without mutating task lifecycle; absent exact linkage yields zero, one candidate, or multiple user-choice candidates without auto-adoption/rebinding.
+- open decisions and their declared blocked scopes are summarized only for the selected recovery context; selected/implemented/verified states are not rewritten or mislabeled.
+- automatic context is deterministic and hard-bounded to 3000 characters.
+- the adapter deliberately ignores prompt semantics and transcript paths for approval/recovery decisions.
+- malformed/unsupported/unreadable state and refresh/lock failures degrade to a truthful manual Praxis Skill fallback rather than fabricated recovery.
+- Codex host trust remains authoritative. Repository validation proves package/adapter contracts but does not prove that a particular user's environment has deployed or trusted the hook scripts.
 
 ## Validation contract
 
@@ -60,12 +75,14 @@ Current repository validation commands are:
 ```bash
 python -m unittest discover -s tests -v
 python -m compileall -q praxis tests
+python -m unittest tests.test_codex_plugin_manifest tests.test_codex_hooks_manifest tests.test_codex_context tests.test_codex_recovery tests.test_codex_distribution -v
+python -m compileall -q plugins/codex praxis
 pnpm typecheck
 pnpm test:dsh
 ```
 
-A check is Green only when it actually runs successfully. GitHub Actions is authoritative for the minimum Python 3.10 and pnpm/TypeScript environment.
+GitHub Actions is authoritative for Python 3.10, Python 3.13, the dedicated Codex package job, and the TypeScript/DSH seam. A check is Green only when it actually runs successfully.
 
 ## Not implemented yet
 
-Feature-04 defines and tests host-neutral Tutor semantics and durable decision state, but automatic host lifecycle injection is not yet implemented. Feature-05 remains responsible for Codex activation/recovery hooks and distribution; Feature-06 remains responsible for native DSH/Cordis lifecycle integration. Praxis does not yet claim automatic cross-session host recovery through either adapter.
+Feature-06 remains responsible for native DSH/Cordis lifecycle integration. Praxis does not yet claim automatic DSH lifecycle recovery. Feature-05 also does not claim marketplace publication, user-level hook trust, or live-host deployment validation.
