@@ -37,5 +37,6 @@
     "@deepseek-ai/dsh-llm": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-skill": "0.2.1-alpha.1",
     "@deepseek-ai/dsh-commands": "0.2.1-alpha.1"
-  }
+  },
+  "license": "AGPL-3.0-only"
 }
