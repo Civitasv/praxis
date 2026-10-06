@@ -91,6 +91,25 @@ class InstallationContractTests(unittest.TestCase):
         self.assertIn("does not currently expose a non-interactive plugin install command", text)
         self.assertIn("does not currently expose a plugin-install subcommand", text)
 
+    def test_readme_documents_plugin_update_paths(self) -> None:
+        text = (ROOT / "README.md").read_text(encoding="utf-8")
+        for expected in (
+            "## Update Praxis",
+            "python3 -m pip install --user --upgrade 'git+https://github.com/Civitasv/praxis.git'",
+            "codex plugin marketplace upgrade praxis",
+            "Sync now",
+            "git -C ~/.cursor/plugins/local/praxis pull --ff-only",
+            "dsh plugin --profile web update praxis",
+            "codebuddy plugin marketplace update praxis && codebuddy plugin update praxis@praxis",
+            "/reload-plugins",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, text)
+
+        self.assertIn("ChatGPT", text)
+        self.assertIn("daily sync", text.lower())
+        self.assertIn("Upload new version", text)
+
 
 if __name__ == "__main__":
     unittest.main()

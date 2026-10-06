@@ -102,9 +102,11 @@ codex plugin marketplace add Civitasv/praxis
 codex
 ```
 
-Then install **Praxis** from the Plugins Directory. You can do the final install either from Codex with `/plugins` or from the **ChatGPT desktop app** after restarting it and opening Plugins.
+Then install **Praxis** from the Plugins Directory with `/plugins`.
 
-Codex's current CLI can add and manage marketplace sources, but it **does not currently expose a non-interactive plugin install command**, so the final install action is UI-based. Repository/local marketplace testing is supported in ChatGPT Desktop; installing a local plugin on the web does not deploy its local hook scripts.
+**ChatGPT can install plugins too.** ChatGPT and Codex share the plugin directory. If Praxis is available in your account/workspace, install it from **Plugins** in ChatGPT. For the repository version before public-directory publication, a workspace admin can import the Praxis GitHub marketplace; local plugin testing is also supported in ChatGPT Desktop.
+
+Codex's current CLI can add and manage marketplace sources, but it **does not currently expose a non-interactive plugin install command**, so the final install action is UI-based. Installing a plugin on the web does not deploy local hook scripts into a local project runtime, so Praxis's project-local lifecycle behavior still needs a Codex/Work/Desktop execution environment that has the plugin files available.
 
 ### Cursor
 
@@ -141,6 +143,70 @@ codebuddy plugin marketplace add Civitasv/praxis --name praxis && codebuddy plug
 ```
 
 The command adds the Praxis marketplace and installs Praxis at user scope. Use `--scope project` on the install command if you want the project to declare the plugin for collaborators.
+
+## Update Praxis
+
+Praxis's CLI and host integration come from the same repository. Update both when you want the latest Tutor behavior and host adapter changes.
+
+First update the Praxis CLI:
+
+```bash
+python3 -m pip install --user --upgrade 'git+https://github.com/Civitasv/praxis.git'
+```
+
+On Windows, use `py -m pip install --user --upgrade 'git+https://github.com/Civitasv/praxis.git'`.
+
+### Codex / ChatGPT
+
+Refresh the Codex marketplace snapshot:
+
+```bash
+codex plugin marketplace upgrade praxis
+```
+
+Then open `/plugins` in Codex and refresh/reinstall Praxis if the UI offers an update.
+
+If your ChatGPT workspace imported the Praxis marketplace from GitHub, marketplace content has **daily sync** enabled by default. A workspace admin can request it immediately from **Workspace settings → Plugins → Marketplaces → Praxis → Sync now**.
+
+If Praxis was added to ChatGPT as a manually uploaded plugin ZIP instead, open the plugin details and choose **Upload new version**.
+
+### Cursor
+
+For the documented local-plugin checkout:
+
+```bash
+git -C ~/.cursor/plugins/local/praxis pull --ff-only
+```
+
+Then restart Cursor or run **Developer: Reload Window**.
+
+If you later install Praxis from a Cursor marketplace instead, use Cursor's Customize/marketplace update flow rather than modifying the cached marketplace copy directly.
+
+### DeepSeek Harness / Cordis
+
+Update the package in the profile that has Praxis installed:
+
+```bash
+dsh plugin --profile web update praxis
+```
+
+Then restart that profile with `dsh --profile web`. Replace `web` with your actual profile name.
+
+### CodeBuddy
+
+Refresh the marketplace and update the installed plugin:
+
+```bash
+codebuddy plugin marketplace update praxis && codebuddy plugin update praxis@praxis
+```
+
+If CodeBuddy is already running, use:
+
+```text
+/reload-plugins
+```
+
+Third-party marketplace auto-update can also be enabled from CodeBuddy's `/plugin` manager.
 
 ## Enable Praxis in a project
 
