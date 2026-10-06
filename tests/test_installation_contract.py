@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-import tomllib
 import unittest
 
 
@@ -9,11 +8,17 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class InstallationContractTests(unittest.TestCase):
     def test_python_package_is_git_pip_installable(self) -> None:
-        data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-        self.assertEqual(data["build-system"]["build-backend"], "setuptools.build_meta")
-        self.assertIn("setuptools", " ".join(data["build-system"]["requires"]))
-        self.assertEqual(data["tool"]["setuptools"]["packages"]["find"]["include"], ["praxis*"])
-        self.assertEqual(data["project"]["scripts"]["praxis"], "praxis.cli:main")
+        text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        for expected in (
+            '[build-system]',
+            'requires = ["setuptools>=68"]',
+            'build-backend = "setuptools.build_meta"',
+            '[tool.setuptools.packages.find]',
+            'include = ["praxis*"]',
+            'praxis = "praxis.cli:main"',
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, text)
 
     def test_codex_marketplace_exposes_root_praxis_plugin(self) -> None:
         path = ROOT / ".agents" / "plugins" / "marketplace.json"
