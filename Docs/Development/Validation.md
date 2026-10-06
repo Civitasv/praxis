@@ -36,6 +36,14 @@ The **Codex package** GitHub Actions job verifies portable/compatibility manifes
 
 This repository validation does not claim that a user's Codex environment has trusted or deployed the hook scripts. Live-host hook execution remains dependent on Codex installation/runtime policy.
 
+From a checkout, refresh the installed Praxis plugin with:
+
+```bash
+./scripts/reload-codex-plugin.sh
+```
+
+The script refreshes the configured `praxis` marketplace and reinstalls `praxis@praxis`. It uses `codex` from `PATH` or finds the CLI bundled in ChatGPT.app under `/Applications` or `~/Applications` on macOS. Set `CODEX_BIN` to override the executable path. Open a new chat afterward; restart the app if the skill is still missing. Package refresh does not reload the current chat or enable Praxis in the project.
+
 ## Cursor / CodeBuddy plugins
 
 Feature-07 validates both plugin packages against their current documented host contracts without requiring marketplace publication.

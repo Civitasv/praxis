@@ -85,13 +85,13 @@ The point is not that you typed more. The point is that the important decision s
 
 ## Install
 
-Praxis has two parts: the small project-state CLI and the integration for your coding agent. Install the CLI once:
+Requires Python 3.10+. Install the Praxis CLI:
 
 ```bash
 python3 -m pip install --user 'git+https://github.com/Civitasv/praxis.git'
 ```
 
-Python 3.10+ is required. On Windows, use `py -m pip install --user 'git+https://github.com/Civitasv/praxis.git'`.
+On Windows, replace `python3` with `py`.
 
 Then install the integration for the agent you use.
 
@@ -104,31 +104,20 @@ codex plugin add praxis@praxis
 
 ### Cursor
 
-macOS / Linux / WSL:
-
 ```bash
 mkdir -p ~/.cursor/plugins/local && git clone --depth 1 https://github.com/Civitasv/praxis.git ~/.cursor/plugins/local/praxis
 ```
 
-Restart Cursor or run **Developer: Reload Window**.
-
-Cursor's `agent` CLI **does not currently expose a plugin-install subcommand**. The command above uses Cursor's official local-plugin directory. Do not replace the checkout with a symlink to a repository outside that directory; Cursor skips those external symlinks.
+Restart Cursor.
 
 ### DeepSeek Harness / Cordis
 
-Install Praxis into the profile you use:
+Requires `pnpm` on `PATH`. Replace `web` with your profile name:
 
 ```bash
 dsh plugin --profile web add github:Civitasv/praxis
-```
-
-Then restart that profile:
-
-```bash
 dsh --profile web
 ```
-
-Replace `web` with your own DSH profile name when needed. DSH plugin management requires `pnpm` on `PATH`.
 
 ### CodeBuddy
 
@@ -136,82 +125,55 @@ Replace `web` with your own DSH profile name when needed. DSH plugin management 
 codebuddy plugin marketplace add Civitasv/praxis --name praxis && codebuddy plugin install praxis@praxis
 ```
 
-The command adds the Praxis marketplace and installs Praxis at user scope. Use `--scope project` on the install command if you want the project to declare the plugin for collaborators.
-
 ## Update Praxis
 
-Praxis's CLI and host integration come from the same repository. Update both when you want the latest Tutor behavior and host adapter changes.
-
-First update the Praxis CLI:
+Update the Praxis CLI, then your agent integration:
 
 ```bash
 python3 -m pip install --user --upgrade 'git+https://github.com/Civitasv/praxis.git'
 ```
 
-On Windows, use `py -m pip install --user --upgrade 'git+https://github.com/Civitasv/praxis.git'`.
-
-### Codex / ChatGPT
-
-Refresh the Codex marketplace snapshot and installed plugin package:
+### Codex
 
 ```bash
 codex plugin marketplace upgrade praxis
 codex plugin add praxis@praxis
 ```
 
-From a Praxis checkout, run the same steps with:
-
-```bash
-./scripts/reload-codex-plugin.sh
-```
-
-The script requires an existing `praxis` marketplace and a Codex CLI with `plugin add` support. It uses `codex` from `PATH` or automatically finds the CLI bundled in ChatGPT.app under `/Applications` or `~/Applications` on macOS. Set `CODEX_BIN` to override the executable path. Open a new chat after refreshing; if the skill still does not appear, restart Codex. The script updates the installed package but does not reload the current chat or enable Praxis in the project. On older CLI versions, refresh/reinstall Praxis through `/plugins`.
-
-If your ChatGPT workspace imported the Praxis marketplace from GitHub, marketplace content has **daily sync** enabled by default. A workspace admin can request it immediately from **Workspace settings → Plugins → Marketplaces → Praxis → Sync now**.
-
-If Praxis was added to ChatGPT as a manually uploaded plugin ZIP instead, open the plugin details and choose **Upload new version**.
+Open a new chat to load the updated skill.
 
 ### Cursor
-
-For the documented local-plugin checkout:
 
 ```bash
 git -C ~/.cursor/plugins/local/praxis pull --ff-only
 ```
 
-Then restart Cursor or run **Developer: Reload Window**.
-
-If you later install Praxis from a Cursor marketplace instead, use Cursor's Customize/marketplace update flow rather than modifying the cached marketplace copy directly.
+Restart Cursor.
 
 ### DeepSeek Harness / Cordis
 
-Update the package in the profile that has Praxis installed:
+Use the profile where you installed Praxis:
 
 ```bash
 dsh plugin --profile web update praxis
+dsh --profile web
 ```
 
-Then restart that profile with `dsh --profile web`. Replace `web` with your actual profile name.
-
 ### CodeBuddy
-
-Refresh the marketplace and update the installed plugin:
 
 ```bash
 codebuddy plugin marketplace update praxis && codebuddy plugin update praxis@praxis
 ```
 
-If CodeBuddy is already running, use:
+Reload plugins in CodeBuddy:
 
 ```text
 /reload-plugins
 ```
 
-Third-party marketplace auto-update can also be enabled from CodeBuddy's `/plugin` manager.
-
 ## Enable Praxis in a project
 
-Installing an integration does **not** enable Praxis in every repository. Open the project in your coding agent and use its Praxis control command:
+Open your project and enable Praxis with your agent's command:
 
 | Agent | Enable | Disable | Status |
 | --- | --- | --- | --- |
@@ -220,13 +182,7 @@ Installing an integration does **not** enable Praxis in every repository. Open t
 | CodeBuddy | `/praxis:enable` | `/praxis:disable` | `/praxis:status` |
 | Codex | `$praxis enable` | `$praxis disable` | `$praxis status` |
 
-In ChatGPT Desktop, an installed Praxis plugin can also be addressed with `@Praxis` on a Work/Codex surface that has access to the local project; ask it to enable, disable, or show Praxis status for the current project.
-
-You do **not** need to run the underlying Python command yourself. The CLI remains the host-adapter implementation boundary.
-
-Then work normally. There is no special “Praxis task language” to learn.
-
-Ask the coding agent to build something:
+Then ask the coding agent to build something:
 
 ```text
 Add organization-level API keys.
