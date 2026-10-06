@@ -68,6 +68,18 @@ Prompt and transcript contents are ignored for approval semantics. Hook failures
 
 **No MCP** server or MCP configuration is part of the Cursor integration.
 
+### Cursor local setup
+
+Praxis is not published to the Cursor Marketplace yet. For local use, place a **copy** of the Praxis repository at:
+
+```text
+~/.cursor/plugins/local/praxis
+```
+
+and restart Cursor (or run **Developer: Reload Window**), then confirm Praxis appears in Customize with the Cursor-plugin components enabled. Cursor's local-plugin loader does not follow a symlink whose target lives outside `~/.cursor/plugins/local/`, so copying the checkout is the reliable development path.
+
+The repository also contains the portable root `plugin.json` used by Codex/Agent Plugins. Cursor-specific hooks are declared by `.cursor-plugin/plugin.json`; verify the Cursor-plugin form is active when testing Feature-07.
+
 ## CodeBuddy — Feature-07
 
 CodeBuddy integration is **translation-only** and uses the same shared Python recovery bridge.
@@ -79,6 +91,16 @@ The package is declared by `.codebuddy-plugin/plugin.json`, reuses root `skills/
 Prompt/transcript contents are not parsed as approval. Recovery failures degrade to the manual shared-Skill fallback while remaining fail-open.
 
 **No MCP** server or MCP configuration is part of the CodeBuddy integration.
+
+### CodeBuddy local setup
+
+CodeBuddy can load the Praxis checkout directly for a session:
+
+```bash
+codebuddy --plugin-dir /path/to/praxis
+```
+
+Use `/reload-plugins` after changing the checkout. Marketplace installation is not claimed by Feature-07.
 
 ## Cross-host state
 
