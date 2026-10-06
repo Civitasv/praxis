@@ -17,6 +17,7 @@ if str(PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUGIN_ROOT))
 
 from praxis.project import discover_project_root  # noqa: E402
+from praxis.project_map import project_model_status, refresh_staleness  # noqa: E402
 from praxis.state import load_state  # noqa: E402
 
 
@@ -37,6 +38,29 @@ def _valid_event(event: object) -> dict[str, Any] | None:
     if not isinstance(cwd, str) or not cwd.strip():
         return None
     return event
+
+
+def _task_line(task_id: str, task: dict[str, Any]) -> str:
+    title = task.get("title") or "(untitled)"
+    return (
+        f"{task_id} — {title} "
+        f"[stage={task.get('stage', 'unknown')}, status={task.get('status', 'unknown')}]"
+    )
+
+
+def _exact_codex_tasks(state: dict[str, Any], session_id: object) -> list[tuple[str, dict[str, Any]]]:
+    if not isinstance(session_id, str) or not session_id:
+        return []
+    matches: list[tuple[str, dict[str, Any]]] = []
+    for task_id, task in sorted(state.get("tasks", {}).items()):
+        if (
+            isinstance(task, dict)
+            and task.get("host") == "codex"
+            and task.get("conversation_id") == session_id
+            and task.get("status") != "complete"
+        ):
+            matches.append((task_id, task))
+    return matches
 
 
 def build_context(event: dict[str, Any]) -> str | None:
@@ -60,11 +84,28 @@ def build_context(event: dict[str, Any]) -> str | None:
             "Do not activate Tutor behavior until the user explicitly resumes it."
         )
 
-    return (
-        "Praxis is enabled for this project. "
-        "Load and follow the shared Praxis Tutor Skill. "
-        "Recovery is not approval."
-    )
+    state = refresh_staleness(project_root)
+    lines = [
+        "Praxis is enabled for this project.",
+        "Load and follow the shared Praxis Tutor Skill.",
+    ]
+
+    exact = _exact_codex_tasks(state, value.get("session_id"))
+    if len(exact) == 1:
+        task_id, task = exact[0]
+        lines.append(f"Recovered task: {_task_line(task_id, task)}")
+    elif len(exact) > 1:
+        lines.append("Multiple matching Codex tasks; ask the user which task to continue:")
+        for task_id, task in exact:
+            lines.append(f"- {_task_line(task_id, task)}")
+
+    model = project_model_status(project_root)
+    stale = model.get("stale_sections", [])
+    if stale:
+        lines.append("Stale project sections: " + ", ".join(stale))
+
+    lines.append("Recovery is not approval.")
+    return "\n".join(lines)
 
 
 def build_response(event_name: str, context: str) -> dict[str, Any]:
