@@ -45,12 +45,19 @@ export interface RecoveryStatusInput {
   readonly host: string
   readonly conversationId?: string
   readonly pythonExecutable?: string
+  readonly signal?: AbortSignal
+}
+
+export interface PythonRuntime {
+  readonly platform: NodeJS.Platform
+  readonly env: NodeJS.ProcessEnv
 }
 
 export interface CommandOptions {
   readonly cwd: string
   readonly env: NodeJS.ProcessEnv
   readonly shell: false
+  readonly signal?: AbortSignal
 }
 
 export interface RecoveryInvocation {
@@ -93,14 +100,21 @@ export class PraxisCliProtocolError extends PraxisCliError {
   }
 }
 
-export function buildRecoveryInvocation(input: RecoveryStatusInput): RecoveryInvocation {
+export function buildRecoveryInvocation(
+  input: RecoveryStatusInput,
+  runtime: PythonRuntime = { platform: process.platform, env: process.env },
+): RecoveryInvocation {
   if (!input.cwd.trim()) throw new PraxisCliProtocolError('cwd must be non-empty')
   if (!input.host.trim()) throw new PraxisCliProtocolError('host must be non-empty')
   if (input.conversationId !== undefined && !input.conversationId.trim()) {
     throw new PraxisCliProtocolError('conversationId must be non-empty when provided')
   }
 
+  const configuredPython = input.pythonExecutable
+    ?? (runtime.env.PRAXIS_PYTHON?.trim() ? runtime.env.PRAXIS_PYTHON : undefined)
+  const command = configuredPython ?? (runtime.platform === 'win32' ? 'py' : 'python3')
   const args = [
+    ...configuredPython === undefined && runtime.platform === 'win32' ? ['-3'] : [],
     '-m',
     'praxis',
     'recovery-status',
@@ -113,18 +127,19 @@ export function buildRecoveryInvocation(input: RecoveryStatusInput): RecoveryInv
     args.push('--conversation-id', input.conversationId)
   }
 
-  const inheritedPythonPath = process.env.PYTHONPATH
+  const inheritedPythonPath = runtime.env.PYTHONPATH
   const pythonPath = inheritedPythonPath
     ? `${praxisRepositoryRoot}${delimiter}${inheritedPythonPath}`
     : praxisRepositoryRoot
 
   return {
-    command: input.pythonExecutable ?? 'python3',
+    command,
     args,
     options: {
       cwd: input.cwd,
-      env: { ...process.env, PYTHONPATH: pythonPath },
+      env: { ...runtime.env, PYTHONPATH: pythonPath },
       shell: false,
+      ...input.signal === undefined ? {} : { signal: input.signal },
     },
   }
 }
@@ -138,6 +153,7 @@ const executeCommand: ExecuteCommand = async (command, args, options) => {
         cwd: options.cwd,
         env: options.env,
         shell: false,
+        ...options.signal === undefined ? {} : { signal: options.signal },
         encoding: 'utf8',
         maxBuffer: 1024 * 1024,
       },
