@@ -62,7 +62,7 @@ DSH does not interpret the user's prompt as approval. Exact/candidate tasks, ope
 python -m praxis recovery-status --cwd . --host dsh --conversation-id <session-id>
 ```
 
-The TypeScript adapter invokes this through direct argv execution with `shell: false` and caps injected context at **3000 characters**. Its model-facing message source is `praxis-dsh`.
+The TypeScript adapter invokes this through direct argv execution with `shell: false` and caps injected context at **3000 characters**. It uses `python3` by default on POSIX, `py -3` on Windows, and accepts `PRAXIS_PYTHON` as an executable-path override. Its model-facing message source is `praxis-dsh`.
 
 Installing or checking out this repository does not enable Praxis, and Feature-06 **does not install** the private `@praxis/plugin-dsh` package into any DSH **profile**. Repository CI proves package/API/lifecycle behavior; profile composition and external package publication remain deployment concerns.
 
