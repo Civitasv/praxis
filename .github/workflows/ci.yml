@@ -66,6 +66,32 @@ jobs:
       - name: Compile Codex and neutral Python sources
         run: python -m compileall -q plugins/codex praxis
 
+  agent_plugins:
+    name: Cursor / CodeBuddy plugins
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Validate Cursor and CodeBuddy packages
+        run: >-
+          python -m unittest
+          tests.test_shared_recovery_hook
+          tests.test_cursor_integration
+          tests.test_codebuddy_integration
+          tests.test_agent_plugin_distribution
+          -v
+
+      - name: Compile host adapters
+        run: python -m compileall -q plugins/shared plugins/cursor plugins/codebuddy
+
   typescript:
     name: TypeScript / DSH integration
     runs-on: ubuntu-latest
