@@ -106,32 +106,37 @@ class RepositoryContractTests(unittest.TestCase):
         ):
             self.assertIn(command, text)
 
-    def test_readme_describes_codex_and_dsh_integration_without_claiming_external_installation(self) -> None:
+    def test_readme_is_product_facing_and_routes_internals_to_docs(self) -> None:
         text = self.read("README.md")
         for expected in (
-            "Features 01–06 are implemented",
-            "state.json",
-            "source fingerprints",
-            "decision-level",
-            "decisions.md",
-            "open -> selected -> implemented -> verified",
-            "shared Praxis Tutor Skill",
-            "SessionStart",
-            "UserPromptSubmit",
-            "3000",
-            "manual",
-            "agent/created",
-            "agent/pre-step",
-            "0.2.1-alpha.1",
-            "recovery-status",
+            "Build with AI. Keep the judgment.",
+            "## Philosophy",
+            "## What using Praxis feels like",
+            "## Quick start",
+            "I don't know",
+            "python -m praxis enable --cwd",
+            "python -m praxis status --cwd",
+            "Codex",
+            "DeepSeek Harness / Cordis",
+            "## What Praxis tries to preserve",
+            "Docs/Architecture/Overview.md",
+            "Docs/Architecture/Harness%20Integration.md",
+            "Docs/Specs/",
+            "Docs/Development/Validation.md",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, text)
-        self.assertIn("trust", text.lower())
-        self.assertIn("installation", text.lower())
-        self.assertIn("does not enable", text.lower())
-        self.assertIn("does not install", text.lower())
-        self.assertIn("profile", text.lower())
+
+        for implementation_detail in (
+            "Features 01–06 are implemented",
+            "compare-and-swap",
+            "source fingerprints",
+            "agent/pre-step",
+            "SessionStart",
+            "UserPromptSubmit",
+        ):
+            with self.subTest(implementation_detail=implementation_detail):
+                self.assertNotIn(implementation_detail, text)
 
     def test_harness_architecture_records_codex_translation_boundary(self) -> None:
         text = self.read("Docs/Architecture/Harness Integration.md")
