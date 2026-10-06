@@ -10,9 +10,9 @@ class PraxisCommandSurfaceTests(unittest.TestCase):
     def test_shared_skill_defines_explicit_control_intents(self) -> None:
         text = (ROOT / "skills" / "praxis" / "SKILL.md").read_text(encoding="utf-8")
         for expected in (
-            "$praxis enable",
-            "$praxis disable",
-            "$praxis status",
+            "`enable`: run `praxis enable --cwd .`",
+            "`disable`: run `praxis disable --cwd .`",
+            "`status`: run `praxis status --cwd .`",
             "Do not ask the user to run the underlying CLI",
         ):
             self.assertIn(expected, text)
