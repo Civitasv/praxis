@@ -131,11 +131,12 @@ test('agent/created is silent when Praxis is uninitialized and contains recovery
 
 
 test('agent lifecycle forwards cancellation and suppresses fallback after abort', async () => {
-  const entered = Promise.withResolvers<AbortSignal>()
+  let resolveEntered!: (signal: AbortSignal) => void
+  const entered = new Promise<AbortSignal>(resolve => { resolveEntered = resolve })
   const { ctx } = await lifecycleHarness(async input => {
     assert.ok(input.signal)
-    entered.resolve(input.signal)
-    await new Promise<never>((_resolve, reject) => {
+    resolveEntered(input.signal)
+    return await new Promise<RecoverySnapshot>((_resolve, reject) => {
       input.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
     })
   })
@@ -149,6 +150,37 @@ test('agent lifecycle forwards cancellation and suppresses fallback after abort'
     controller.abort(new Error('cancel lifecycle'))
     await assert.doesNotReject(announcing)
     assert.equal(observed.aborted, true)
+    assert.deepEqual(injected, [])
+  } finally {
+    await ctx.fiber.dispose()
+  }
+})
+
+
+test('disposing the lifecycle plugin aborts running recovery without fallback injection', { timeout: 3000 }, async () => {
+  let resolveEntered!: (signal: AbortSignal) => void
+  const entered = new Promise<AbortSignal>(resolve => { resolveEntered = resolve })
+  const { ctx, fiber } = await lifecycleHarness(async input => {
+    assert.ok(input.signal)
+    resolveEntered(input.signal)
+    return await new Promise<RecoverySnapshot>((_resolve, reject) => {
+      if (input.signal?.aborted) {
+        reject(new Error('already aborted'))
+        return
+      }
+      input.signal?.addEventListener('abort', () => reject(new Error('plugin disposed')), { once: true })
+    })
+  })
+  try {
+    const { agent, injected } = stubAgent(ctx)
+    ctx.agents.enter(agent, undefined)
+    const announcing = ctx.agents.announce(agent, 'resume')
+    const signal = await entered
+    assert.equal(signal.aborted, false)
+    const disposing = fiber.dispose()
+    await assert.doesNotReject(announcing)
+    await disposing
+    assert.equal(signal.aborted, true)
     assert.deepEqual(injected, [])
   } finally {
     await ctx.fiber.dispose()
