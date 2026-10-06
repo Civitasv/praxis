@@ -29,7 +29,7 @@ That is useful if the only goal is output. But many people also want to get bett
 
 It is a plugin for that gap.
 
-It extends the coding agent you already use rather than introducing another agent or a separate workflow. Its core Tutor behavior is implemented as a shared skill, with a small host-neutral core and thin host integrations around it.
+It extends the coding agent you already use. Its core Tutor behavior is implemented as a shared skill, with a small host-neutral core and thin host integrations around it.
 
 During mechanical work, Praxis stays out of the way. When the agent reaches a consequential conclusion — about data ownership, state boundaries, failure behavior, dependencies, API shape, migration strategy — the plugin makes the reasoning legible before implementation continues.
 
