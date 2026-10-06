@@ -3,6 +3,7 @@ import tempfile
 import unittest
 
 from plugins.codex.hooks.praxis_context import build_context
+from praxis.decisions import create_decision, record_implementation, record_verification, select_decision
 from praxis.project_map import project_model_status, upsert_section
 from praxis.state import enable_state, load_state
 from praxis.tasks import create_task
@@ -88,6 +89,83 @@ class CodexRecoveryTests(unittest.TestCase):
             evidence.write_text("v1", encoding="utf-8")
             build_context(self.event(root))
             self.assertEqual(project_model_status(root)["stale_sections"], ["auth"])
+
+
+    def test_one_unmatched_pending_task_is_candidate_without_rebinding(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            enable_state(root)
+            task_id, _ = create_task(root, 0, host="dsh", title="Payments")
+            before = load_state(root)["tasks"]
+            context = build_context(self.event(root, session_id="new-session"))
+            self.assertIn("Recoverable task candidate", context)
+            self.assertIn(task_id, context)
+            self.assertIn("Payments", context)
+            self.assertEqual(load_state(root)["tasks"], before)
+            self.assertNotIn("conversation_id", load_state(root)["tasks"][task_id])
+
+    def test_multiple_pending_tasks_require_user_choice(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            enable_state(root)
+            first, state = create_task(root, 0, host="codex", title="Alpha")
+            second, _ = create_task(root, state["revision"], host="dsh", title="Beta")
+            context = build_context(self.event(root, session_id="new-session"))
+            self.assertIn("Multiple pending task candidates", context)
+            self.assertIn("ask the user which task to continue", context)
+            self.assertLess(context.index(first), context.index(second))
+
+    def test_open_decisions_and_blocked_scopes_are_summarized_for_recovered_task_only(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            enable_state(root)
+            task_id, state = create_task(
+                root, 0, host="codex", conversation_id="session-1", title="Auth"
+            )
+            other_task, _ = create_task(root, state["revision"], host="dsh", title="Billing")
+            decision_id, _ = create_decision(
+                root,
+                task_id,
+                "architectural",
+                "Session ownership",
+                "Choose session source of truth.",
+                blocked_scopes=["session-persistence"],
+            )
+            unrelated_id, _ = create_decision(
+                root,
+                other_task,
+                "engineering",
+                "Billing retry",
+                "Choose retry semantics.",
+                blocked_scopes=["billing-retry"],
+            )
+            context = build_context(self.event(root))
+            self.assertIn(f"Open decision: {decision_id}", context)
+            self.assertIn("Session ownership", context)
+            self.assertIn("Blocked scopes: session-persistence", context)
+            self.assertNotIn(unrelated_id, context)
+            self.assertNotIn("billing-retry", context)
+
+    def test_non_open_decisions_are_not_presented_as_open(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            enable_state(root)
+            task_id, _ = create_task(
+                root, 0, host="codex", conversation_id="session-1", title="Auth"
+            )
+            selected_id, _ = create_decision(root, task_id, "engineering", "Selected", "Context")
+            select_decision(root, selected_id, 0, "Use A")
+            implemented_id, _ = create_decision(root, task_id, "engineering", "Implemented", "Context")
+            select_decision(root, implemented_id, 0, "Use B")
+            record_implementation(root, implemented_id, 1, "Implemented B")
+            verified_id, _ = create_decision(root, task_id, "engineering", "Verified", "Context")
+            select_decision(root, verified_id, 0, "Use C")
+            record_implementation(root, verified_id, 1, "Implemented C")
+            record_verification(root, verified_id, 2, "Verified C")
+            context = build_context(self.event(root))
+            for decision_id in (selected_id, implemented_id, verified_id):
+                self.assertNotIn(f"Open decision: {decision_id}", context)
+            self.assertNotIn("user reasoning", context.lower())
 
 
 if __name__ == "__main__":
