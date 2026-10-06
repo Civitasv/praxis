@@ -75,13 +75,14 @@ export const praxisRepositoryRoot = fileURLToPath(new URL('../../../', import.me
 export class PraxisCliError extends Error {}
 
 export class PraxisCliProcessError extends PraxisCliError {
-  constructor(
-    message: string,
-    readonly stdout: string,
-    readonly stderr: string,
-  ) {
+  readonly stdout: string
+  readonly stderr: string
+
+  constructor(message: string, stdout: string, stderr: string) {
     super(message)
     this.name = 'PraxisCliProcessError'
+    this.stdout = stdout
+    this.stderr = stderr
   }
 }
 
