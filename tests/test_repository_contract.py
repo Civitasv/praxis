@@ -135,7 +135,7 @@ class RepositoryContractTests(unittest.TestCase):
             "DeepSeek Harness / Cordis",
             "Cursor",
             "CodeBuddy",
-            "## What Praxis tries to preserve",
+            "## What Praxis helps you build",
             "Docs/Architecture/Overview.md",
             "Docs/Architecture/Harness%20Integration.md",
             "Docs/Specs/",
