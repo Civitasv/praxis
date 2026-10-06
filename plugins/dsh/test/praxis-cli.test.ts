@@ -39,6 +39,29 @@ test('builds recovery-status as direct argv with repository PYTHONPATH prefix', 
 })
 
 
+test('selects the documented Python launcher and carries cancellation without shell text', () => {
+  const signal = new AbortController().signal
+  const windows = buildRecoveryInvocation(
+    { cwd: 'C:\\work repo', host: 'dsh', signal },
+    { platform: 'win32', env: {} },
+  )
+  assert.equal(windows.command, 'py')
+  assert.deepEqual(windows.args.slice(0, 3), ['-3', '-m', 'praxis'])
+  assert.equal(windows.options.signal, signal)
+
+  const overridden = buildRecoveryInvocation(
+    { cwd: 'C:\\work repo', host: 'dsh' },
+    {
+      platform: 'win32',
+      env: { PRAXIS_PYTHON: 'C:\\Python Custom\\python.exe' },
+    },
+  )
+  assert.equal(overridden.command, 'C:\\Python Custom\\python.exe')
+  assert.deepEqual(overridden.args.slice(0, 2), ['-m', 'praxis'])
+  assert.equal(overridden.args.includes('-3'), false)
+})
+
+
 test('passes cwd and session only as argv and parses structured recovery JSON', async () => {
   let captured: unknown[] | undefined
   const snapshot = {
