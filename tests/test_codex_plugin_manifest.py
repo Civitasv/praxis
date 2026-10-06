@@ -43,6 +43,15 @@ class CodexPluginManifestTests(unittest.TestCase):
     def test_declared_shared_skill_exists(self) -> None:
         self.assertTrue((ROOT / "skills" / "praxis" / "SKILL.md").is_file())
 
+    def test_direct_control_skills_route_to_existing_cli(self) -> None:
+        for action in ("enable", "disable", "status"):
+            with self.subTest(action=action):
+                source = (ROOT / "skills" / f"praxis-{action}" / "SKILL.md").read_text(
+                    encoding="utf-8"
+                )
+                self.assertIn(f"name: praxis-{action}\n", source)
+                self.assertIn(f"`praxis {action} --cwd .`", source)
+
 
 if __name__ == "__main__":
     unittest.main()

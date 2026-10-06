@@ -12,6 +12,7 @@
 | Verified project model, section CAS, stale detection, `code.md` projection | Feature-03 | `praxis/project_map.py` |
 | Durable decision provenance, lifecycle, decision CAS, `decisions.md` projection | Feature-04 | `praxis/decisions.py` |
 | Shared Praxis Tutor Skill | Feature-04/06/07 | `skills/praxis/` |
+| Direct Praxis enable/disable/status skills | Feature-05 | `skills/praxis-enable/`, `skills/praxis-disable/`, `skills/praxis-status/` |
 | Portable Codex plugin package | Feature-05 | `plugin.json`, `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json` |
 | Codex lifecycle adapter | Feature-05 | `plugins/codex/hooks/hooks.json`, `plugins/codex/hooks/praxis_context.py` |
 | Shared Python host recovery bridge | Feature-07 | `plugins/shared/recovery_hook.py` |

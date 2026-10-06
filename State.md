@@ -73,6 +73,7 @@ Feature-07: Implemented
 
 - the repository root `plugin.json` is the canonical portable Agent Plugins manifest; `.codex-plugin/plugin.json` is the Codex compatibility fallback.
 - both package surfaces reference the existing shared `skills/praxis/` tree and `plugins/codex/hooks/hooks.json`; Feature-05 does not duplicate the Skill or neutral core.
+- `skills/praxis-enable/`, `skills/praxis-disable/`, and `skills/praxis-status/` expose direct control entries in the Codex skill picker, using the existing neutral CLI.
 - `plugins/codex/hooks/hooks.json` declares `SessionStart` for `startup|resume|clear|compact` and `UserPromptSubmit`.
 - `plugins/codex/hooks/praxis_context.py` is a thin translation adapter. Event/user data arrives over stdin JSON rather than being interpolated into hook commands.
 - plugin installation does not enable Praxis. An uninitialized project is silent and creates no `.praxis/` state. A paused project remains paused.

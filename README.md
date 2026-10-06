@@ -180,7 +180,10 @@ Open your project and enable Praxis with your agent's command:
 | Cursor | `/praxis enable` | `/praxis disable` | `/praxis status` |
 | DeepSeek Harness | `/praxis enable` | `/praxis disable` | `/praxis status` |
 | CodeBuddy | `/praxis:enable` | `/praxis:disable` | `/praxis:status` |
-| Codex | `$praxis enable` | `$praxis disable` | `$praxis status` |
+| Codex | `$praxis:praxis-enable` | `$praxis:praxis-disable` | `$praxis:praxis-status` |
+
+In Codex's skill picker, select Praxis Enable, Praxis Disable, or Praxis Status directly.
+The shared `$praxis enable|disable|status` skill remains available for compatibility.
 
 Then ask the coding agent to build something:
 

@@ -28,6 +28,11 @@ plugins/codex/hooks/praxis_context.py
 
 The existing `skills/praxis/` and `praxis/` trees are referenced in place and are not copied into `plugins/codex/`.
 
+The shared skills directory also exposes `praxis-enable`, `praxis-disable`, and
+`praxis-status` as direct skill-picker entries. Each runs the corresponding
+existing neutral CLI command with `--cwd .` and reports its actual result.
+The shared Tutor skill continues to accept control arguments for compatibility.
+
 ## Lifecycle contract
 
 Codex integration handles:
