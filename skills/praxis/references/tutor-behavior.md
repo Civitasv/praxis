@@ -57,11 +57,11 @@ Unrelated mechanical work may continue.
 
 ## When the user does not know
 
-If the user says "I don't know", teach the smallest useful mental model for the current distinction.
+If the user says "I don't know", provide the minimum context needed to build the smallest useful mental model for the current distinction.
 
-Give a concrete recommendation when useful, then explain:
+Give a concrete default recommendation when useful. Surface one meaningful tradeoff the user can now understand, then explain:
 
-- why it fits now;
+- why the recommendation fits now;
 - what it costs;
 - when another choice would be better.
 
@@ -84,7 +84,7 @@ Examples:
 
 ## Distillation
 
-After a meaningful decision has evidence behind it, connect:
+After a meaningful decision has evidence behind it, preserve the core evidence chain `decision -> implementation -> verification`, then connect:
 
 ```text
 alternatives considered
