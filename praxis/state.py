@@ -399,12 +399,33 @@ def enable_state(project_root: Path, expected_revision: int | None = None) -> di
 
         if current["enabled"] is True:
             return current
-        if expected_revision != current["revision"]:
+        if expected_revision is not None and expected_revision != current["revision"]:
             raise RevisionConflictError(expected_revision, current["revision"])
         return _mutate_locked(
             project_root,
             current["revision"],
             lambda state: {**state, "enabled": True},
+        )
+
+
+def disable_state(
+    project_root: Path,
+    expected_revision: int | None = None,
+) -> dict[str, Any] | None:
+    """Disable Praxis without requiring callers to pre-read a revision."""
+
+    with StateLock(project_root):
+        current = load_state(project_root)
+        if current is None:
+            return None
+        if current["enabled"] is False:
+            return current
+        if expected_revision is not None and expected_revision != current["revision"]:
+            raise RevisionConflictError(expected_revision, current["revision"])
+        return _mutate_locked(
+            project_root,
+            current["revision"],
+            lambda state: {**state, "enabled": False},
         )
 
 
