@@ -85,7 +85,7 @@ The point is not that you typed more. The point is that the important decision s
 
 ## Quick start
 
-Praxis currently runs from source and supports **Codex** and **DeepSeek Harness / Cordis**.
+Praxis currently runs from source and supports **Codex**, **Cursor**, **CodeBuddy**, and **DeepSeek Harness / Cordis**.
 
 ### 1. Get Praxis
 
@@ -117,6 +117,14 @@ python -m praxis status --cwd /path/to/your-project
 **Codex**
 
 Use this repository as a local Codex plugin. The repository root contains the Praxis plugin manifest and shared Tutor Skill.
+
+**Cursor**
+
+Use this repository as a local Cursor plugin. Praxis reuses the same Tutor Skill and project state.
+
+**CodeBuddy**
+
+Use this repository as a local CodeBuddy plugin. Praxis reuses the same Tutor Skill and project state.
 
 **DeepSeek Harness / Cordis**
 
@@ -170,7 +178,7 @@ README is intentionally product-facing. Implementation details and repository in
 
 - [Architecture overview](Docs/Architecture/Overview.md)
 - [Tutor model](Docs/Architecture/Tutor%20Model.md)
-- [Codex and DSH integration](Docs/Architecture/Harness%20Integration.md)
+- [Codex, Cursor, CodeBuddy, and DSH integration](Docs/Architecture/Harness%20Integration.md)
 - [Feature specifications](Docs/Specs/)
 - [Development and validation](Docs/Development/Validation.md)
 
