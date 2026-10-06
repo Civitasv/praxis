@@ -1,0 +1,11 @@
+{
+  "name": "praxis",
+  "version": "0.1.0",
+  "description": "Build with AI while keeping consequential engineering judgment visible.",
+  "author": {
+    "name": "Civitasv"
+  },
+  "repository": "https://github.com/Civitasv/praxis",
+  "skills": "./skills/",
+  "hooks": "./plugins/cursor/hooks/hooks.json"
+}
