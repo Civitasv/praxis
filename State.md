@@ -96,7 +96,7 @@ Feature-07: Implemented
 - a per-agent digest suppresses duplicate unchanged automatic context. A visible recovery change makes the next user-driven step eligible for reinjection.
 - Cordis fiber disposal removes the plugin listeners and runtime Skill registration. Unload never deletes or edits `.praxis`.
 - repository validation uses real current DSH/Cordis types and real AgentRegistry event dispatch plus a TypeScript-to-Python subprocess integration test.
-- the repository package remains private and is not claimed as npm-published or automatically installed into a user's DSH profile.
+- the repository root now declares a DSH bundle layer at `plugins/dsh/cordis.patch.yml`, so `dsh plugin --profile <name> add github:Civitasv/praxis` can install the Git checkout into a profile. The package is still not claimed as npm-published.
 
 ## Implemented Cursor and CodeBuddy integration
 
@@ -108,6 +108,8 @@ Feature-07: Implemented
 - prompt and transcript text are never interpreted as decision approval.
 - installing either host plugin does not enable Praxis; uninitialized projects remain silent and paused projects remain paused.
 - Feature-07 adds no MCP server or MCP configuration.
+- `.agents/plugins/marketplace.json` exposes the root plugin as a Codex marketplace source; `.codebuddy-plugin/marketplace.json` exposes the repository to CodeBuddy's plugin marketplace CLI.
+- `pyproject.toml` now has an explicit setuptools build backend, so the neutral `praxis` CLI can be installed directly from the Git repository.
 
 ## Validation contract
 
@@ -116,6 +118,7 @@ Current repository validation commands are:
 ```bash
 python -m unittest discover -s tests -v
 python -m compileall -q praxis tests
+python -m pip wheel --no-deps . -w /tmp/praxis-wheel
 python -m unittest tests.test_codex_plugin_manifest tests.test_codex_hooks_manifest tests.test_codex_context tests.test_codex_recovery tests.test_codex_distribution -v
 python -m compileall -q plugins/codex praxis
 pnpm typecheck
@@ -126,4 +129,4 @@ GitHub Actions is authoritative for Python 3.10, Python 3.13, the dedicated Code
 
 ## External distribution status
 
-Praxis does not yet claim marketplace publication. The DSH package is repository-local/private and Feature-06 does not mutate DSH profiles or install itself into a host deployment. Codex, Cursor, and CodeBuddy plugin installation/trust/deployment remain controlled by their host environments.
+Praxis does not yet claim publication in the public Codex, Cursor, or CodeBuddy marketplaces, nor npm publication for DSH. The repository does ship source-installable Codex and CodeBuddy marketplace catalogs plus a Git-installable DSH bundle. Cursor remains a local-plugin checkout until Marketplace publication. Host enablement and trust remain controlled by their environments.
