@@ -26,6 +26,7 @@ class RepositoryContractTests(unittest.TestCase):
             "Docs/Specs/Feature-03 Verified Project Model.md",
             "Docs/Specs/Feature-04 Tutor Decision Loop.md",
             "Docs/Specs/Feature-05 Codex Integration.md",
+            "Docs/Specs/Feature-06 DSH Integration.md",
             ".github/pull_request_template.md",
         ]
         for relative in required:
@@ -62,13 +63,18 @@ class RepositoryContractTests(unittest.TestCase):
             "plugin.json",
             ".codex-plugin/plugin.json",
             "plugins/codex/hooks/",
+            "praxis/recovery.py",
+            "plugins/dsh/src/lifecycle.ts",
+            "plugins/dsh/src/praxis-cli.ts",
+            "plugins/dsh/src/context.ts",
+            "plugins/dsh/src/skill.ts",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, text)
 
-    def test_state_records_features_one_through_five_implemented(self) -> None:
+    def test_state_records_features_one_through_six_implemented(self) -> None:
         text = self.read("State.md")
-        for feature in range(1, 6):
+        for feature in range(1, 7):
             self.assertIn(f"Feature-{feature:02d}: Implemented", text)
         for capability in (
             "Durable decision provenance",
@@ -80,10 +86,15 @@ class RepositoryContractTests(unittest.TestCase):
             "SessionStart and UserPromptSubmit recovery",
             "Bounded Codex recovery context",
             "Manual Skill fallback",
+            "Neutral recovery snapshot",
+            "Native DSH Cordis plugin",
+            "DSH shared Skill registration",
+            "DSH agent lifecycle recovery",
+            "DSH direct-argv Python bridge",
+            "Bounded DSH recovery context",
         ):
             self.assertIn(f"{capability}: Implemented", text)
-        self.assertIn("Feature-06: Pending", text)
-        self.assertNotIn("Feature-05: Pending", text)
+        self.assertNotIn("Feature-06: Pending", text)
 
     def test_state_lists_current_validation_commands(self) -> None:
         text = self.read("State.md")
@@ -95,10 +106,10 @@ class RepositoryContractTests(unittest.TestCase):
         ):
             self.assertIn(command, text)
 
-    def test_readme_describes_codex_integration_without_claiming_live_host_trust(self) -> None:
+    def test_readme_describes_codex_and_dsh_integration_without_claiming_external_installation(self) -> None:
         text = self.read("README.md")
         for expected in (
-            "Features 01–05 are implemented",
+            "Features 01–06 are implemented",
             "state.json",
             "source fingerprints",
             "decision-level",
@@ -109,13 +120,18 @@ class RepositoryContractTests(unittest.TestCase):
             "UserPromptSubmit",
             "3000",
             "manual",
-            "Feature-06",
+            "agent/created",
+            "agent/pre-step",
+            "0.2.1-alpha.1",
+            "recovery-status",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, text)
         self.assertIn("trust", text.lower())
         self.assertIn("installation", text.lower())
         self.assertIn("does not enable", text.lower())
+        self.assertIn("does not install", text.lower())
+        self.assertIn("profile", text.lower())
 
     def test_harness_architecture_records_codex_translation_boundary(self) -> None:
         text = self.read("Docs/Architecture/Harness Integration.md")
@@ -125,6 +141,18 @@ class RepositoryContractTests(unittest.TestCase):
             "UserPromptSubmit",
             "transcript-independent",
             "manual",
+        ):
+            self.assertIn(expected, text)
+
+    def test_harness_architecture_records_dsh_translation_boundary(self) -> None:
+        text = self.read("Docs/Architecture/Harness Integration.md")
+        for expected in (
+            "DSH — Feature-06",
+            "agent/created",
+            "agent/pre-step",
+            "translation-only",
+            "direct argv",
+            "praxis-dsh",
         ):
             self.assertIn(expected, text)
 
