@@ -115,6 +115,18 @@ codebuddy plugin marketplace add Civitasv/praxis --name praxis
 codebuddy plugin install praxis@praxis
 ```
 
+## User control surface
+
+Activation is a user control, not an implementation script users are expected to run.
+
+- Cursor: `/praxis enable`, `/praxis disable`, `/praxis status`.
+- DSH: `/praxis enable`, `/praxis disable`, `/praxis status`; this is registered through `ctx.commands` and does not become a model message.
+- CodeBuddy: `/praxis:enable`, `/praxis:disable`, `/praxis:status`; CodeBuddy namespaces plugin commands by plugin name.
+- Codex: `$praxis enable|disable|status` through the shared Praxis Skill. OpenAI plugins do not expose the Cursor/CodeBuddy-style custom `commands/` surface, so Praxis does not invent a slash command there.
+- ChatGPT Desktop: on a Work/Codex surface with local project execution, users may address `@Praxis` and request enable/disable/status. Ordinary ChatGPT surfaces without local project execution must not claim the local state change happened.
+
+All controls converge on the neutral `praxis enable|disable|status --cwd <project>` CLI/state boundary. User-facing host commands do not require the user to copy or execute that CLI manually.
+
 ## Cross-host state
 
 Codex, DSH, Cursor, and CodeBuddy share the same project-local `.praxis/` records. Cross-host recovery restores persisted facts only; it does not fabricate missing chat context or mutate lifecycle merely because a host session resumed.

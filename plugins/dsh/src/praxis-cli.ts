@@ -48,6 +48,21 @@ export interface RecoveryStatusInput {
   readonly signal?: AbortSignal
 }
 
+export type PraxisControlAction = 'enable' | 'disable' | 'status'
+
+export interface PraxisControlInput {
+  readonly cwd: string
+  readonly action: PraxisControlAction
+  readonly pythonExecutable?: string
+  readonly signal?: AbortSignal
+}
+
+export interface PraxisControlResult {
+  readonly initialized: boolean
+  readonly active: boolean
+  readonly revision: number | null
+}
+
 export interface PythonRuntime {
   readonly platform: NodeJS.Platform
   readonly env: NodeJS.ProcessEnv
@@ -100,6 +115,37 @@ export class PraxisCliProtocolError extends PraxisCliError {
   }
 }
 
+function pythonRuntime(
+  cwd: string,
+  pythonExecutable: string | undefined,
+  signal: AbortSignal | undefined,
+  runtime: PythonRuntime,
+): { command: string; prefix: string[]; options: CommandOptions } {
+  const configuredPython = pythonExecutable
+    ?? (runtime.env.PRAXIS_PYTHON?.trim() ? runtime.env.PRAXIS_PYTHON : undefined)
+  const command = configuredPython ?? (runtime.platform === 'win32' ? 'py' : 'python3')
+  const prefix = [
+    ...configuredPython === undefined && runtime.platform === 'win32' ? ['-3'] : [],
+    '-m',
+    'praxis',
+  ]
+  const inheritedPythonPath = runtime.env.PYTHONPATH
+  const pythonPath = inheritedPythonPath
+    ? `${praxisRepositoryRoot}${delimiter}${inheritedPythonPath}`
+    : praxisRepositoryRoot
+  return {
+    command,
+    prefix,
+    options: {
+      cwd,
+      env: { ...runtime.env, PYTHONPATH: pythonPath },
+      shell: false,
+      ...signal === undefined ? {} : { signal },
+    },
+  }
+}
+
+
 export function buildRecoveryInvocation(
   input: RecoveryStatusInput,
   runtime: PythonRuntime = { platform: process.platform, env: process.env },
@@ -110,13 +156,9 @@ export function buildRecoveryInvocation(
     throw new PraxisCliProtocolError('conversationId must be non-empty when provided')
   }
 
-  const configuredPython = input.pythonExecutable
-    ?? (runtime.env.PRAXIS_PYTHON?.trim() ? runtime.env.PRAXIS_PYTHON : undefined)
-  const command = configuredPython ?? (runtime.platform === 'win32' ? 'py' : 'python3')
+  const python = pythonRuntime(input.cwd, input.pythonExecutable, input.signal, runtime)
   const args = [
-    ...configuredPython === undefined && runtime.platform === 'win32' ? ['-3'] : [],
-    '-m',
-    'praxis',
+    ...python.prefix,
     'recovery-status',
     '--cwd',
     input.cwd,
@@ -127,20 +169,23 @@ export function buildRecoveryInvocation(
     args.push('--conversation-id', input.conversationId)
   }
 
-  const inheritedPythonPath = runtime.env.PYTHONPATH
-  const pythonPath = inheritedPythonPath
-    ? `${praxisRepositoryRoot}${delimiter}${inheritedPythonPath}`
-    : praxisRepositoryRoot
-
   return {
-    command,
+    command: python.command,
     args,
-    options: {
-      cwd: input.cwd,
-      env: { ...runtime.env, PYTHONPATH: pythonPath },
-      shell: false,
-      ...input.signal === undefined ? {} : { signal: input.signal },
-    },
+    options: python.options,
+  }
+}
+
+export function buildControlInvocation(
+  input: PraxisControlInput,
+  runtime: PythonRuntime = { platform: process.platform, env: process.env },
+): RecoveryInvocation {
+  if (!input.cwd.trim()) throw new PraxisCliProtocolError('cwd must be non-empty')
+  const python = pythonRuntime(input.cwd, input.pythonExecutable, input.signal, runtime)
+  return {
+    command: python.command,
+    args: [...python.prefix, input.action, '--cwd', input.cwd],
+    options: python.options,
   }
 }
 
@@ -281,4 +326,36 @@ export async function runRecoveryStatus(
     throw new PraxisCliProtocolError('Praxis CLI did not return a successful recovery response')
   }
   return parseSnapshot(payload.recovery)
+}
+
+
+export async function runPraxisControl(
+  input: PraxisControlInput,
+  execute: ExecuteCommand = executeCommand,
+): Promise<PraxisControlResult> {
+  const invocation = buildControlInvocation(input)
+  const result = await execute(invocation.command, invocation.args, invocation.options)
+
+  let payload: unknown
+  try {
+    payload = JSON.parse(result.stdout)
+  } catch {
+    throw new PraxisCliProtocolError('Praxis CLI returned malformed JSON')
+  }
+  if (!isRecord(payload) || payload.ok !== true || typeof payload.active !== 'boolean') {
+    throw new PraxisCliProtocolError('Praxis CLI did not return a successful control response')
+  }
+  const state = payload.state
+  if (state !== null && !isRecord(state)) {
+    throw new PraxisCliProtocolError('Praxis control state is invalid')
+  }
+  const revision = state === null ? null : state.revision
+  if (revision !== null && !Number.isSafeInteger(revision)) {
+    throw new PraxisCliProtocolError('Praxis control revision is invalid')
+  }
+  return {
+    initialized: state !== null,
+    active: payload.active,
+    revision: revision as number | null,
+  }
 }

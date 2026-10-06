@@ -127,7 +127,7 @@ class StateSchemaTests(unittest.TestCase):
                 enable_state(root)
             self.assertEqual(path.read_text(encoding="utf-8"), original)
 
-    def test_reenable_paused_state_requires_matching_revision_and_preserves_unknown_fields(self) -> None:
+    def test_reenable_paused_state_allows_direct_control_and_preserves_unknown_fields(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             directory = root / ".praxis"
@@ -151,8 +151,8 @@ class StateSchemaTests(unittest.TestCase):
                 encoding="utf-8",
             )
             with self.assertRaises(RevisionConflictError):
-                enable_state(root)
-            updated = enable_state(root, expected_revision=4)
+                enable_state(root, expected_revision=99)
+            updated = enable_state(root)
             self.assertTrue(updated["enabled"])
             self.assertEqual(updated["revision"], 5)
             self.assertEqual(updated["future_metadata"], {"keep": True})

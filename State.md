@@ -66,7 +66,7 @@ Feature-07: Implemented
 - `praxis/decisions.py` owns durable engineering/architectural decision provenance, lifecycle, task linkage, open-decision queries, and blocked scopes.
 - decision lifecycle is `open -> selected -> implemented -> verified`; `superseded` and `abandoned` are explicit terminal alternatives.
 - recovery, silence, restart, compaction, or an AI recommendation never advances decision lifecycle.
-- `skills/praxis/` provides the shared English, host-neutral Tutor policy.
+- `skills/praxis/` provides the shared English, host-neutral Tutor policy and the explicit Codex/ChatGPT control intent for enable/disable/status.
 - `praxis/recovery.py` produces the compact host-neutral recovery snapshot used by DSH, Cursor, and CodeBuddy adapters. It refreshes only machine-owned project freshness for enabled state and never creates/adopts tasks or advances decisions.
 
 ## Implemented Codex integration
@@ -91,6 +91,7 @@ Feature-07: Implemented
 - `plugins/dsh/src/praxis-cli.ts` executes the neutral `praxis recovery-status` module with direct argv and `shell: false`; the default launcher is `python3` on POSIX and `py -3` on Windows, `PRAXIS_PYTHON` can override the executable path, and project cwd/session id remain separate arguments with the Praxis repository root prepended to `PYTHONPATH`.
 - `plugins/dsh/src/context.ts` renders deterministic recovery/fallback context capped at 3000 characters and flattens free-form task/decision/scope labels before injection.
 - `plugins/dsh/src/lifecycle.ts` declares the `praxis-dsh` instructions message source.
+- `plugins/dsh/src/command.ts` registers the direct human `/praxis enable|disable|status` command through the DSH command registry; it runs outside model history and calls the neutral CLI bridge.
 - `agent/created` synchronizes startup/resume lifecycle context through `agent.inject()`; uninitialized projects are silent and recovery failures are contained so Praxis cannot reject Agent creation.
 - user-driven `agent/pre-step` delegates first, preserves downstream reject decisions, skips empty continuation steps, and appends changed Praxis context only to downstream `enter` messages.
 - a per-agent digest suppresses duplicate unchanged automatic context. A visible recovery change makes the next user-driven step eligible for reinjection.
@@ -104,7 +105,9 @@ Feature-07: Implemented
 - `plugins/shared/recovery_hook.py` invokes `praxis recovery-status` through direct argv with `shell: false`, validates the JSON response, renders deterministic context capped at 3000 characters, and provides a truthful manual-Skill fallback.
 - Cursor `sessionStart` injects recovery context using the current project/session identity.
 - Cursor `beforeSubmitPrompt` refreshes durable/project freshness and fails open, but does not claim unsupported per-prompt context injection.
+- Cursor exposes `/praxis enable|disable|status` through its plugin command surface.
 - CodeBuddy `SessionStart` and `UserPromptSubmit` both refresh and inject recovery context through the documented `additionalContext` envelope.
+- CodeBuddy exposes `/praxis:enable`, `/praxis:disable`, and `/praxis:status` through plugin-namespaced commands.
 - prompt and transcript text are never interpreted as decision approval.
 - installing either host plugin does not enable Praxis; uninitialized projects remain silent and paused projects remain paused.
 - Feature-07 adds no MCP server or MCP configuration.

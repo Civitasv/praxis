@@ -7,5 +7,6 @@
   },
   "repository": "https://github.com/Civitasv/praxis",
   "skills": "./skills/",
-  "hooks": "./plugins/codebuddy/hooks/hooks.json"
+  "hooks": "./plugins/codebuddy/hooks/hooks.json",
+  "commands": "./plugins/codebuddy/commands/"
 }
