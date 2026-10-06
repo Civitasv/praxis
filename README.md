@@ -38,43 +38,51 @@ Then the agent keeps moving.
 ```text
 You     Add persistent chat history.
 
-Praxis  One decision matters first:
-        what owns durable message history?
+Agent   I’ll use the database as the source of truth
+        and Redis as a cache.
 
-        A. Redis is the source of truth.
-           Simpler, but losing Redis loses history.
+Praxis  Before implementation, make that conclusion legible.
 
-        B. The database is the source of truth.
-           More durable; Redis stays disposable.
+        Why it follows:
+        message history is durable product state. A Redis restart
+        should not erase it.
 
-You     I don't know.
+        What it costs:
+        the database adds a durable write path and some complexity,
+        but Redis stays disposable.
 
-Praxis  If history must survive cache loss or restarts, choose B.
-        I’ll make that assumption explicit and let the agent continue.
+        Where it stops being true:
+        if chat history is intentionally ephemeral, Redis-only
+        may be enough.
+
+You     So the database owns the history. Redis only makes access
+        faster, and losing Redis should not lose messages.
+
+Praxis  Exactly. That is the model the implementation should preserve.
 
 Agent   ✓ Implemented
 
 Praxis  ✓ Verified: history survived a Redis restart.
 ```
 
-The goal is not to make you type more.
+Praxis is not trying to make you choose every implementation detail.
 
-The goal is to keep the important decision visible long enough for it to become part of your own mental model.
+The AI can still reach the conclusion. Praxis keeps the reasoning, tradeoff, and boundary visible until the conclusion is something you actually understand — not just something the agent decided for you.
 
 ## How Praxis behaves
 
 | Situation | Praxis |
 | --- | --- |
 | Mechanical implementation | Stays out of the way |
-| Consequential engineering choice | Surfaces the decision |
-| You know what you want | Records the rationale and continues |
-| You are unsure | Explains the real tradeoff, without turning it into a quiz |
-| Implementation finishes | Checks whether reality matched the decision |
+| AI reaches a consequential conclusion | Makes the reasoning and boundary legible |
+| You already understand it | Keeps moving |
+| You are unsure | Builds the missing mental model, without turning it into a quiz |
+| Implementation finishes | Checks whether reality supported the conclusion |
 | A new session starts | Restores the durable decision context |
 
 The loop is simple:
 
-**surface → decide → implement → verify → retain**
+**surface → understand → implement → verify → retain**
 
 Praxis should make the agent more productive **without making you less capable**.
 
