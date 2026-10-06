@@ -42,6 +42,7 @@ from .project_map import (
     render_project_model,
     upsert_section,
 )
+from .recovery import recovery_status
 from .state import (
     InvalidStateError,
     MalformedStateError,
@@ -84,6 +85,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = subparsers.add_parser("status")
     _add_cwd(status)
+
+    recovery = subparsers.add_parser("recovery-status")
+    _add_cwd(recovery)
+    recovery.add_argument("--host", required=True)
+    recovery.add_argument("--conversation-id")
 
     enable = subparsers.add_parser("enable")
     _add_cwd(enable)
@@ -250,6 +256,17 @@ def _run_command(args: argparse.Namespace) -> dict[str, Any]:
     project_root = discover_project_root(args.cwd)
     if args.command == "status":
         return _success(project_root, load_state(project_root))
+    if args.command == "recovery-status":
+        recovery = recovery_status(
+            project_root,
+            host=args.host,
+            conversation_id=args.conversation_id,
+        )
+        return _success(
+            project_root,
+            load_state(project_root),
+            recovery=recovery,
+        )
     if args.command == "enable":
         state = enable_state(project_root, expected_revision=args.expected_revision)
         return _success(project_root, state)

@@ -22,7 +22,7 @@ Harness-specific APIs must not enter the neutral Python core.
 
 ## Current status
 
-Features 01–05 are implemented: the AI-native repository foundation, Praxis State Core, Verified Project Model, host-neutral Tutor Decision Loop, and Codex Integration.
+Features 01–06 are implemented: the AI-native repository foundation, Praxis State Core, Verified Project Model, host-neutral Tutor Decision Loop, Codex Integration, and native DeepSeek Harness/Cordis Integration.
 
 Feature-02 provides project-boundary discovery, symlink-safe project state paths, format-versioned `.praxis/state.json`, bounded write locking, atomic replacement, compare-and-swap revisions, durable multi-task records, pause/resume state, and a JSON CLI contract.
 
@@ -50,7 +50,21 @@ Automatic recovery does not parse prompt text as approval and does not read tran
 
 Codex hook execution is subject to host installation, execution-environment availability, and hook **trust**. Repository CI validates package files and adapter behavior, but it does not claim that hooks are active in a particular user's Codex environment. If automatic hooks are unavailable, the shared Praxis Tutor Skill remains the **manual** fallback.
 
-Feature-06 is still pending and will add native DSH/Cordis lifecycle integration.
+### DeepSeek Harness / Cordis integration
+
+Feature-06 replaces the original DSH seam with a native Cordis plugin under `plugins/dsh/`. It is tested against the current DSH preview family `0.2.1-alpha.1` and Cordis `4.0.5-alpha.1`.
+
+The plugin registers the same shared Praxis Skill and listens to DSH `agent/created` plus `agent/pre-step`. Session creation/resume can inject durable recovery context through `agent.inject()`; later user-driven steps synchronize only when the rendered recovery snapshot changes. Empty continuation steps are ignored, and downstream reject decisions are preserved.
+
+DSH does not interpret the user's prompt as approval. Exact/candidate tasks, open decisions, blocked scopes, and stale/unknown project sections come from:
+
+```bash
+python -m praxis recovery-status --cwd . --host dsh --conversation-id <session-id>
+```
+
+The TypeScript adapter invokes this through direct argv execution with `shell: false` and caps injected context at **3000 characters**. It uses `python3` by default on POSIX, `py -3` on Windows, and accepts `PRAXIS_PYTHON` as an executable-path override. Its model-facing message source is `praxis-dsh`.
+
+Installing or checking out this repository does not enable Praxis, and Feature-06 **does not install** the private `@praxis/plugin-dsh` package into any DSH **profile**. Repository CI proves package/API/lifecycle behavior; profile composition and external package publication remain deployment concerns.
 
 ## State CLI
 
@@ -59,9 +73,10 @@ python -m praxis status --cwd .
 python -m praxis enable --cwd .
 python -m praxis pause --cwd . --expected-revision 0
 python -m praxis task-create --cwd . --expected-revision 0 --host codex --title "Auth design"
+python -m praxis recovery-status --cwd . --host dsh --conversation-id session-id
 ```
 
-State commands emit JSON for adapter consumption. Mutations require expected revisions where applicable so stale writers cannot overwrite newer state.
+State and recovery commands emit JSON for adapter consumption. Mutations require expected revisions where applicable so stale writers cannot overwrite newer state.
 
 ## Verified project model CLI
 

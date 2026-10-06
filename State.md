@@ -37,7 +37,14 @@ Feature-05: Implemented
 - Manual Skill fallback: Implemented
 - Codex package CI validation: Implemented
 
-Feature-06: Pending — DSH integration
+Feature-06: Implemented
+- Neutral recovery snapshot: Implemented
+- Native DSH Cordis plugin: Implemented
+- DSH shared Skill registration: Implemented
+- DSH agent lifecycle recovery: Implemented
+- DSH direct-argv Python bridge: Implemented
+- Bounded DSH recovery context: Implemented
+- DSH integration CI validation: Implemented
 
 ## Implemented state, project model, and Tutor decision core
 
@@ -52,6 +59,7 @@ Feature-06: Pending — DSH integration
 - decision lifecycle is `open -> selected -> implemented -> verified`; `superseded` and `abandoned` are explicit terminal alternatives.
 - recovery, silence, restart, compaction, or an AI recommendation never advances decision lifecycle.
 - `skills/praxis/` provides the shared English, host-neutral Tutor policy.
+- `praxis/recovery.py` produces the compact host-neutral recovery snapshot used by the DSH adapter. It refreshes only machine-owned project freshness for enabled state and never creates/adopts tasks or advances decisions.
 
 ## Implemented Codex integration
 
@@ -68,6 +76,20 @@ Feature-06: Pending — DSH integration
 - malformed/unsupported/unreadable state and refresh/lock failures degrade to a truthful manual Praxis Skill fallback rather than fabricated recovery.
 - Codex host trust remains authoritative. Repository validation proves package/adapter contracts but does not prove that a particular user's environment has deployed or trusted the hook scripts.
 
+## Implemented DeepSeek Harness integration
+
+- `plugins/dsh/` is a native Cordis plugin targeting the pinned DSH preview family `0.2.1-alpha.1` with Cordis `4.0.5-alpha.1`.
+- `plugins/dsh/src/skill.ts` registers the single shared `skills/praxis/SKILL.md` as model- and user-invocable; no Skill copy lives under `plugins/dsh/`.
+- `plugins/dsh/src/praxis-cli.ts` executes the neutral `praxis recovery-status` module with direct argv and `shell: false`; the default launcher is `python3` on POSIX and `py -3` on Windows, `PRAXIS_PYTHON` can override the executable path, and project cwd/session id remain separate arguments with the Praxis repository root prepended to `PYTHONPATH`.
+- `plugins/dsh/src/context.ts` renders deterministic recovery/fallback context capped at 3000 characters and flattens free-form task/decision/scope labels before injection.
+- `plugins/dsh/src/lifecycle.ts` declares the `praxis-dsh` instructions message source.
+- `agent/created` synchronizes startup/resume lifecycle context through `agent.inject()`; uninitialized projects are silent and recovery failures are contained so Praxis cannot reject Agent creation.
+- user-driven `agent/pre-step` delegates first, preserves downstream reject decisions, skips empty continuation steps, and appends changed Praxis context only to downstream `enter` messages.
+- a per-agent digest suppresses duplicate unchanged automatic context. A visible recovery change makes the next user-driven step eligible for reinjection.
+- Cordis fiber disposal removes the plugin listeners and runtime Skill registration. Unload never deletes or edits `.praxis`.
+- repository validation uses real current DSH/Cordis types and real AgentRegistry event dispatch plus a TypeScript-to-Python subprocess integration test.
+- the repository package remains private and is not claimed as npm-published or automatically installed into a user's DSH profile.
+
 ## Validation contract
 
 Current repository validation commands are:
@@ -81,8 +103,8 @@ pnpm typecheck
 pnpm test:dsh
 ```
 
-GitHub Actions is authoritative for Python 3.10, Python 3.13, the dedicated Codex package job, and the TypeScript/DSH seam. A check is Green only when it actually runs successfully.
+GitHub Actions is authoritative for Python 3.10, Python 3.13, the dedicated Codex package job, and the TypeScript/DSH integration job with Python 3.10. A check is Green only when it actually runs successfully.
 
-## Not implemented yet
+## External distribution status
 
-Feature-06 remains responsible for native DSH/Cordis lifecycle integration. Praxis does not yet claim automatic DSH lifecycle recovery. Feature-05 also does not claim marketplace publication, user-level hook trust, or live-host deployment validation.
+Praxis does not yet claim marketplace publication. The DSH package is repository-local/private and Feature-06 does not mutate DSH profiles or install itself into a host deployment. Codex hook trust/deployment likewise remains controlled by the host environment.
