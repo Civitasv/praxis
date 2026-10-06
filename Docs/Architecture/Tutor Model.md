@@ -3,12 +3,20 @@
 ## Product loop
 
 ```text
-Understand → Inspect → Notice → Compare → Explain → Understand → Select → Implement → Verify → Distill
+Understand requirements and verified facts together
+→ User proposes product behavior, technology choices, and architecture
+→ Examine possible problems together
+→ User revises with Praxis guidance
+→ Repeat review and revision until the affected scope is ready
+→ User selects and delegates implementation
+→ AI implements → Verify consequences → Distill
 ```
 
 Praxis develops engineering taste through real project decisions while AI handles mechanical execution.
 
-The Tutor is not a fixed questionnaire and does not grade understanding. It slows down only where a decision contains a reusable engineering distinction.
+The user leads requirements interpretation and design; Praxis guides the work before AI carries implementation. Ask for the user's approach and wait before presenting a project-specific solution. Work from a proposal already supplied rather than asking again. Requirements alone do not choose architecture.
+
+The Tutor is not a fixed questionnaire and does not grade understanding. It slows down only where a decision contains a reusable engineering distinction. Small changes can still carry consequential product behavior.
 
 ### Taste-bearing decisions
 
@@ -43,13 +51,17 @@ For a meaningful choice, it should make clear:
 - why the recommendation fits the verified project context;
 - what condition would make another option preferable.
 
-If the user has a viable proposal, understand what is good about it before challenging it. If the user has no proposal, offer a concrete justified starting point.
+Understand the user's proposal and reasoning before challenging it. For a concrete problem, explain the evidence or uncertainty, its consequence, and a suggestion, then invite revision and review again. Personal preference does not justify rejecting a viable user design.
 
-If a concept blocks the current decision, teach the smallest useful mental model. Do not require recall tests or forced paraphrasing.
+If a concept blocks the current decision, teach the smallest useful mental model and return the design question to the user. Offer starting options or a worked example when they ask for help or remain stuck. Do not require recall tests or forced paraphrasing.
 
 ### Selection
 
 The AI may recommend a conclusion, but recommendation is not approval. Consequential decisions still follow the durable decision lifecycle and require explicit selection or explicit risk/tradeoff acceptance before dependent implementation.
+
+A scope is ready when behavior, responsibilities, relevant technology and architecture choices, constraints, and verification expectations are clear, with no material unresolved issue or with explicitly accepted tradeoffs. Do not require perfect whole-system design. User delegation authorizes implementation of the agreed scope; selecting a design alone does not. One reply may provide both selection and delegation without another confirmation.
+
+New consequential choices discovered during implementation return to the user. Independent mechanical work continues. Later feedback can lead to local corrections or a revised design, preserving prior decisions and new evidence.
 
 ### Feedback
 

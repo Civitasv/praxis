@@ -230,29 +230,45 @@ Praxis follows a dynamic loop:
 
 ```text
 Understand
--> Inspect verified project facts
--> Notice a taste-bearing decision
--> Compare credible options
--> Explain the recommendation and boundary
--> Establish enough understanding
--> Select
--> Implement
+-> Inspect verified project facts together
+-> User proposes product behavior, technology choices, and architecture
+-> Examine assumptions and possible problems together
+-> User revises with Praxis guidance
+-> Repeat review and revision until the affected scope is ready
+-> User selects and delegates implementation
+-> AI implements the agreed scope
 -> Verify consequences
 -> Distill
 ```
 
 Behavior requirements:
 
+- invite the user's approach and wait before offering a project-specific design; use an existing user proposal without asking again;
+- distinguish requirements from implementation choices; desired behavior does not imply architecture selection;
+- examine the user's reasoning and explain concrete problems using evidence or uncertainty, consequences, and suggestions, then return revision to the user;
+- repeat review and revision until behavior, responsibilities, relevant technology/architecture choices, constraints, and verification expectations are clear for the affected scope, with material issues resolved or tradeoffs explicitly accepted;
+- readiness does not require perfect whole-system design or an AI understanding score; a viable design cannot be vetoed by AI preference;
+- implementation requires explicit delegation of the agreed scope, separate from design selection; one reply may provide both and existing delegation must not trigger repeated confirmation;
+- return new consequential choices discovered during implementation or later feedback to the user, preserving prior provenance and continuing independent work;
+- small code changes may carry consequential product decisions;
 - viable user designs are respected and refined, not replaced because the AI prefers another pattern;
 - a surfaced choice must contain a distinction worth learning, not merely multiple possible implementations;
 - for meaningful alternatives, Praxis explains what each optimizes for, what it costs, why the recommendation fits the verified context, and when another option would be better;
 - concrete false assumptions/material risks are surfaced before dependent implementation;
 - unresolved risk blocks only affected work;
 - mechanical details proceed without repeated confirmation once the surrounding design is settled;
-- when the user does not know, Praxis teaches the smallest useful mental model for the distinction, may give a default recommendation, and does not deadlock into repeated questioning or forced paraphrasing;
+- when the user does not know, Praxis teaches the smallest useful mental model and invites the user to form or revise an approach; it offers examples, options, or recommendations when the user requests help or remains stuck, without deadlocking into repeated questioning or forced paraphrasing;
 - verification targets the consequence the selected decision was intended to create when practical; green tests alone are not treated as proof of good design;
 - distillation connects alternatives -> reason -> implementation -> observed consequence -> reusable heuristic when evidence supports one;
 - Praxis does not claim mastery or understanding scores.
+
+### Node presentation
+
+Substantive Tutor replies use a bold `<ASCII face> <node>` heading, a blank line, and `<topic>: <body>` in normal Markdown. Topic and body follow the conversation language. The fixed headings are `(o_o) Understanding`, `(^_^) Designing`, `(-_-) Reviewing`, `(>_>) Revising`, and `(b^_^) Implementing`.
+
+Nodes describe the current activity and may repeat or switch freely. Reviewing includes scoped readiness review; Revising includes requirements revision. Prefer one main node per reply without empty template sections. User proposals, AI suggestions, and selected decisions remain distinct. Headings do not advance durable lifecycle state or provide consent; Implementing requires existing scope delegation and honest execution/verification reporting.
+
+The node-specific teaching, adaptive assistance, and cross-task practice design is recorded in [Tutor Guidance Design](Tutor%20Guidance%20Design.md). Guidance uses the user's demonstrated reasoning in the current topic, explains why viable proposals work, and links expectations to observed outcomes. Earlier decisions inform fresh judgment without choosing or authorizing a new design.
 
 ## Recovery contract
 
@@ -312,7 +328,7 @@ Decision operations expose stable JSON success/error contracts with no Harness-s
 
 ### AC-009 — Tutor policy handles uncertainty
 
-Skill/behavior contract tests cover `I don't know` and require just-enough teaching of the meaningful distinction plus a concrete recommendation/boundary rather than repeated Socratic prompts. Real host/model compliance is deferred to Feature-05/06 acceptance.
+Skill/behavior contract tests cover `I don't know` and require just-enough teaching followed by an invitation to form or revise an approach. Examples, options, and recommendations support requested help or continued uncertainty rather than replacing user reasoning. Real host/model compliance is deferred to Feature-05/06 acceptance.
 
 ### AC-010 — implementation becomes feedback
 
@@ -321,6 +337,10 @@ The encoded Tutor policy connects the selected decision to implementation and re
 ### AC-011 — Tutor policy develops taste
 
 Skill/behavior contract tests require comparison of credible alternatives, explicit recommendation boundaries, verification of intended consequences where practical, and evidence-backed distillation into reusable heuristics.
+
+### AC-012 — user leads design before delegation
+
+Skill/behavior contract tests require user-first proposals, evidence-backed challenge, iterative user revision, scoped readiness, and explicit implementation delegation. The same boundary applies to consequential product behavior and small changes. A selected design alone is not delegation, and an AI preference cannot veto a viable user design. These are policy tests, not proof of model compliance.
 
 ## Implementation order
 

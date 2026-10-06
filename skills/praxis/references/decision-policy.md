@@ -8,6 +8,8 @@
 
 A useful rule: surface a decision when repeated experience with that choice would materially improve the user's engineering taste in similar future problems.
 
+The user proposes and revises consequential product and engineering choices with Praxis guidance. Desired outcomes are requirements, not selected architecture. Small implementation size does not make a decision mechanical when it changes product behavior or another consequential property.
+
 A taste-bearing decision usually has at least one of these properties:
 
 - several credible options can work, but they optimize for different futures;
@@ -43,6 +45,7 @@ open -> selected -> implemented -> verified
 
 - `open` means the consequential choice remains unresolved.
 - `selected` requires explicit user selection or explicit acceptance of a risk/tradeoff.
+- Selecting the design alone does not delegate implementation. The user must also explicitly delegate the affected scope; one reply may do both, and existing delegation does not need repeated confirmation. This is a Tutor interaction boundary, not an additional durable lifecycle state.
 - `implemented` requires the affected implementation to exist according to the selected decision.
 - `verified` requires relevant verification evidence to be recorded.
 

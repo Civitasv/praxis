@@ -38,7 +38,9 @@ class RepositoryContractTests(unittest.TestCase):
 
     def test_repository_uses_single_canonical_docs_tree(self) -> None:
         self.assertTrue((ROOT / "Docs").is_dir())
-        self.assertFalse((ROOT / "docs").exists())
+        # Inspect actual names: case-insensitive filesystems resolve docs to Docs.
+        names = [path.name for path in ROOT.iterdir() if path.name.casefold() == "docs"]
+        self.assertEqual(names, ["Docs"])
 
     def test_agents_contract_names_core_invariants(self) -> None:
         text = self.read("AGENTS.md")
@@ -131,7 +133,7 @@ class RepositoryContractTests(unittest.TestCase):
             "## Philosophy",
             "## What using Praxis feels like",
             "## Install",
-            "I don't know",
+            "What other options do I have?",
             "/praxis enable",
             "/praxis:enable",
             "$praxis:praxis-enable",
@@ -168,8 +170,9 @@ class RepositoryContractTests(unittest.TestCase):
 
         for expected in (
             "develop engineering taste",
-            "Notice a taste-bearing decision",
-            "Compare credible options",
+            "User proposes an approach",
+            "User revises the approach",
+            "User selects the design and user delegates implementation",
             "Teach what makes one choice better than another here",
             "Tests passing is not proof that a design was good",
             "Prefer X when Y because Z.",

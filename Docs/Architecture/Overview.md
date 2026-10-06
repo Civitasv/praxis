@@ -2,7 +2,7 @@
 
 ## Goal
 
-Praxis is a Harness-neutral AI Tutor layer. Its product center is the judgment loop: understand the real project, expose consequential choices, discuss or teach where necessary, implement agreed work, verify behavior, and connect outcome back to decision.
+Praxis is a Harness-neutral AI Tutor layer. Its product center is the judgment loop: understand requirements and verified project facts together, invite the user's design, examine problems and guide revision until the affected scope is ready, then implement the user's selected and delegated work, verify behavior, and connect outcome back to decision.
 
 ## Layers
 

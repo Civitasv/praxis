@@ -67,6 +67,8 @@ Feature-07: Implemented
 - decision lifecycle is `open -> selected -> implemented -> verified`; `superseded` and `abandoned` are explicit terminal alternatives.
 - recovery, silence, restart, compaction, or an AI recommendation never advances decision lifecycle.
 - `skills/praxis/` provides the shared English, host-neutral Tutor policy for explicitly enabled projects. Separate control skills handle enable/disable/status.
+- Tutor policy now invites user proposals before project-specific AI solutions, guides problem review and iterative user revision, and requires scoped implementation delegation after design selection. Policy tests check the encoded contract; real model compliance remains unverified by those tests.
+- Fixed node output now routes by the unresolved gap and includes adaptive teaching, expectation/result comparison, and evidence-based transfer to later tasks. The bounded simulation results and validation limits are recorded in `Docs/Specs/Tutor Guidance Design.md`.
 - `praxis/recovery.py` produces the compact host-neutral recovery snapshot used by DSH, Cursor, and CodeBuddy adapters. It refreshes only machine-owned project freshness for enabled state and never creates/adopts tasks or advances decisions.
 
 ## Implemented Codex integration

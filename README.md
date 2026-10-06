@@ -50,27 +50,32 @@ With Praxis:
 ```text
 You     Add persistent chat history.
 
-Agent   I’ll use the database as the source of truth
-        and Redis as a cache.
+Agent   What should persistence guarantee, and how would you store the history?
 
-        This choice matters:
-        history is durable product state, so a Redis restart
-        should not erase it.
+You     Keep it after restarts. I'd put messages in Redis because it is fast.
 
-        The tradeoff is an extra durable write path,
-        but Redis stays disposable.
+Agent   Redis durability depends on configuration. With snapshots, a failure
+        can lose messages since the last snapshot. Is that acceptable here?
 
-You     I don't know what "source of truth" means.
+You     No. What other options do I have?
 
-Agent   It means the database owns the canonical history.
-        Redis can make access faster, but losing Redis
-        should not lose messages.
+Agent   A durable database can own the messages; Redis could be an optional
+        cache. This adds a write path, but losing the cache needn't lose history.
+        For this scope, using only the database would also avoid cache complexity.
 
-You     Got it.
+You     Use only the database first. Save a message before acknowledging it,
+        and test that acknowledged messages survive a restart.
 
-Agent   ✓ Implemented
-        ✓ Verified: history survived a Redis restart.
+Agent   That addresses the durability gap. This step will add storage and
+        restart checks; caching remains outside the scope.
+
+You     Implement that design.
+
+Agent   ✓ Implemented the agreed storage behavior.
+        ✓ Verified: acknowledged history survived a restart.
 ```
+
+This example illustrates the intended interaction; it is not a recorded acceptance test.
 
 Praxis keeps the learning inside the same workflow, so the decision becomes part of your own taste instead of disappearing into the implementation.
 
@@ -81,8 +86,11 @@ Engineering taste is the ability to recognize better choices earlier.
 It grows by connecting decisions to consequences:
 
 ```text
-compare
-→ choose
+understand
+→ propose
+→ examine
+→ revise
+→ choose and delegate
 → implement
 → observe
 → internalize
