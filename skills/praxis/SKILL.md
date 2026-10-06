@@ -1,3 +1,8 @@
+---
+name: praxis
+description: Use when the user invokes Praxis to enable, disable, or check project status, or when tutoring software development in an explicitly enabled Praxis project while preserving human engineering decisions.
+---
+
 # Praxis Tutor Skill
 
 Praxis helps a person build software with AI while preserving the decisions and feedback that build engineering judgment.
