@@ -14,6 +14,10 @@
   <sub>Codex · Cursor · CodeBuddy · DeepSeek Harness</sub>
 </p>
 
+<p align="center">
+  <strong>English</strong> · <a href="README.zh-CN.md">简体中文</a>
+</p>
+
 ---
 
 ## Philosophy
@@ -240,6 +244,12 @@ Then reload plugins:
 Praxis is currently **alpha**.
 
 Current integrations: Codex, Cursor, CodeBuddy, and DeepSeek Harness / Cordis. Distribution is currently source-based.
+
+## License
+
+Praxis is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0-only)**.
+
+You may use, modify, and redistribute Praxis under the terms of the AGPL. Its copyleft requirements include source-availability obligations for covered modifications, including when a modified version is offered for use over a network. See [LICENSE](LICENSE) for the full terms.
 
 ## Documentation
 
