@@ -130,6 +130,32 @@ test('agent/created is silent when Praxis is uninitialized and contains recovery
 })
 
 
+test('agent lifecycle forwards cancellation and suppresses fallback after abort', async () => {
+  const entered = Promise.withResolvers<AbortSignal>()
+  const { ctx } = await lifecycleHarness(async input => {
+    assert.ok(input.signal)
+    entered.resolve(input.signal)
+    await new Promise<never>((_resolve, reject) => {
+      input.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
+    })
+  })
+  try {
+    const controller = new AbortController()
+    const { agent, injected } = stubAgent(ctx)
+    ctx.agents.enter(agent, undefined)
+    const announcing = ctx.agents.announce(agent, 'resume', controller.signal)
+    const observed = await entered.promise
+    assert.equal(observed.aborted, false)
+    controller.abort(new Error('cancel lifecycle'))
+    await assert.doesNotReject(announcing)
+    assert.equal(observed.aborted, true)
+    assert.deepEqual(injected, [])
+  } finally {
+    await ctx.fiber.dispose()
+  }
+})
+
+
 test('pre-step skips empty continuations and always delegates', async () => {
   let runs = 0
   const { ctx } = await lifecycleHarness(async () => {
