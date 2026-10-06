@@ -11,46 +11,49 @@
 | Verified project model, section CAS, stale detection, `code.md` projection | Feature-03 | `praxis/project_map.py` |
 | Durable decision provenance, lifecycle, decision CAS, `decisions.md` projection | Feature-04 | `praxis/decisions.py` |
 | Shared Praxis Tutor Skill | Feature-04 | `skills/praxis/` |
-| Codex adapter | Feature-05 | `plugins/codex/` — pending |
+| Portable Codex plugin package | Feature-05 | `plugin.json`, `.codex-plugin/plugin.json` |
+| Codex lifecycle adapter | Feature-05 | `plugins/codex/hooks/hooks.json`, `plugins/codex/hooks/praxis_context.py` |
 | DSH adapter seam | Feature-01 | `plugins/dsh/` |
 | DSH runtime integration | Feature-06 | `plugins/dsh/` — pending beyond seam |
-| CI | Feature-01 | `.github/workflows/ci.yml` |
-| Repository contracts | Feature-01/02/03/04 | `AGENTS.md`, `State.md`, `Docs/` |
-| Python tests | Feature-01/02/03/04 | `tests/` |
+| CI | Feature-01/05 | `.github/workflows/ci.yml` |
+| Repository contracts | Feature-01/02/03/04/05 | `AGENTS.md`, `State.md`, `Docs/` |
+| Python tests | Feature-01/02/03/04/05 | `tests/` |
 | DSH boundary tests | Feature-01 | `plugins/dsh/test/` |
 
 ## Dependency direction
 
 ```text
-shared Praxis Tutor Skill / host adapters
-                |
-                v
-         neutral JSON/CLI contract
-                |
-                v
-             praxis/
-          /      |       \
-         v       v        v
-   state.json  decisions  source evidence
-      |          |             |
-      |          |             v
-      |          |       project_model
-      |          |             |
-      |          v             v
-      |   .praxis/decisions.md .praxis/code.md
-      |       (projection)       (projection)
-      v
-machine-owned tasks / revisions / lifecycle metadata
+Codex SessionStart / UserPromptSubmit       future DSH lifecycle
+                  |                                  |
+                  v                                  v
+       plugins/codex/hooks/                    plugins/dsh/
+                  \                              /
+                   \                            /
+                    v                          v
+                     shared Praxis Tutor Skill
+                              |
+                              v
+                       neutral Python core
+                              |
+                 +------------+------------+
+                 |            |            |
+                 v            v            v
+              tasks      decisions    project_model
+                 |            |            |
+                 +------------+------------+
+                              |
+                              v
+                     .praxis/state.json
 ```
 
-Harness SDK dependencies terminate in their adapter. The neutral Python core must not import Codex, DeepSeek Harness, Cordis, or adapter package APIs.
+Harness-specific dependencies terminate in their adapter. The neutral Python core must not import Codex, DeepSeek Harness, Cordis, or adapter package APIs.
 
-Feature-02 centralizes durable state writes through `praxis/state.py`. Feature-03 adds `mutate_latest_state` for machine maintenance and section-level project-model concurrency. Feature-04 reuses the same write/lock path for decision-level CAS and durable Tutor provenance.
+Feature-02 centralizes durable state writes through `praxis/state.py`. Feature-03 adds latest-state machine maintenance and section-level project-model concurrency. Feature-04 adds decision-level CAS and durable Tutor provenance. Feature-05 consumes those neutral semantics through a translation-only Codex lifecycle adapter.
 
-`state.json.project_model` is authoritative for verified repository facts and `.praxis/code.md` is a rebuildable projection. `state.json.decisions` is authoritative for consequential decision lifecycle/provenance and `.praxis/decisions.md` is likewise a deterministic projection. Neither Markdown projection is parsed back into state.
+`state.json.project_model` remains authoritative for verified repository facts and `.praxis/code.md` is rebuildable. `state.json.decisions` remains authoritative for consequential decision lifecycle/provenance and `.praxis/decisions.md` is rebuildable. Codex hooks do not create a parallel host-owned state model.
 
-`praxis/fingerprints.py` owns normalized project-relative evidence paths and SHA-256 values. `praxis/decisions.py` owns decision ids, decision revisions, aggregate decision revision, lifecycle transitions, unresolved-decision queries, blocked scopes, and the decision-trail renderer.
+The root `plugin.json` is the portable package manifest. `.codex-plugin/plugin.json` is the compatibility fallback. Both point to the single shared Skill and `plugins/codex/hooks/` package.
 
 ## Where to start
 
-Read `State.md` for current implementation truth. Then read the relevant document under `Docs/Specs/` before changing source or tests. Feature-03 behavior is specified in `Docs/Specs/Feature-03 Verified Project Model.md`; Feature-04 Tutor semantics are specified in `Docs/Specs/Feature-04 Tutor Decision Loop.md`.
+Read `State.md` for current implementation truth. Then read the relevant document under `Docs/Specs/` before changing source or tests. Feature-03 behavior is specified in `Docs/Specs/Feature-03 Verified Project Model.md`; Feature-04 Tutor semantics in `Docs/Specs/Feature-04 Tutor Decision Loop.md`; Feature-05 Codex behavior in `Docs/Specs/Feature-05 Codex Integration.md`.
