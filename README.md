@@ -183,7 +183,7 @@ Open your project and enable Praxis with your agent's command:
 | Codex | `$praxis:praxis-enable` | `$praxis:praxis-disable` | `$praxis:praxis-status` |
 
 In Codex's skill picker, select Praxis Enable, Praxis Disable, or Praxis Status directly.
-The shared `$praxis enable|disable|status` skill remains available for compatibility.
+The shared Praxis skill provides Tutor behavior for enabled projects.
 
 Then ask the coding agent to build something:
 

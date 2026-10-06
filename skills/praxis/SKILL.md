@@ -1,6 +1,6 @@
 ---
 name: praxis
-description: Use when the user invokes Praxis to enable, disable, or check project status, or when tutoring software development in an explicitly enabled Praxis project while preserving human engineering decisions.
+description: Tutor software development in an explicitly enabled Praxis project while preserving human engineering decisions.
 ---
 
 # Praxis Tutor Skill
@@ -10,22 +10,6 @@ Praxis helps a person build software with AI while preserving the decisions and 
 ## Activation
 
 Installation does not enable Praxis. Work as a Praxis Tutor only when the current project is explicitly enabled. Paused state stays paused until explicitly resumed.
-
-### Explicit control
-
-Treat an explicit Praxis control invocation as a project control action, not as ordinary Tutor discussion.
-
-When the host invokes this Skill with a control intent:
-
-- `enable`: run `praxis enable --cwd .` in the current project.
-- `disable`: run `praxis disable --cwd .` in the current project.
-- `status`: run `praxis status --cwd .` in the current project.
-
-Report the resulting state concisely. Do not reinterpret enable/disable as approval of any engineering decision.
-
-Do not ask the user to run the underlying CLI themselves.
-
-If local command execution is unavailable on the current surface, say that the control action requires a local project execution surface rather than pretending it succeeded.
 
 ## Core loop
 

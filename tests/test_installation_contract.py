@@ -78,7 +78,7 @@ class InstallationContractTests(unittest.TestCase):
             "codebuddy plugin marketplace add Civitasv/praxis --name praxis && codebuddy plugin install praxis@praxis",
             "/praxis enable",
             "/praxis:enable",
-            "$praxis enable",
+            "$praxis:praxis-enable",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, text)

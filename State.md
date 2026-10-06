@@ -66,7 +66,7 @@ Feature-07: Implemented
 - `praxis/decisions.py` owns durable engineering/architectural decision provenance, lifecycle, task linkage, open-decision queries, and blocked scopes.
 - decision lifecycle is `open -> selected -> implemented -> verified`; `superseded` and `abandoned` are explicit terminal alternatives.
 - recovery, silence, restart, compaction, or an AI recommendation never advances decision lifecycle.
-- `skills/praxis/` provides the shared English, host-neutral Tutor policy and the explicit Codex/ChatGPT control intent for enable/disable/status.
+- `skills/praxis/` provides the shared English, host-neutral Tutor policy for explicitly enabled projects. Separate control skills handle enable/disable/status.
 - `praxis/recovery.py` produces the compact host-neutral recovery snapshot used by DSH, Cursor, and CodeBuddy adapters. It refreshes only machine-owned project freshness for enabled state and never creates/adopts tasks or advances decisions.
 
 ## Implemented Codex integration

@@ -7,15 +7,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class PraxisCommandSurfaceTests(unittest.TestCase):
-    def test_shared_skill_defines_explicit_control_intents(self) -> None:
+    def test_shared_skill_only_defines_tutor_behavior(self) -> None:
         text = (ROOT / "skills" / "praxis" / "SKILL.md").read_text(encoding="utf-8")
-        for expected in (
-            "`enable`: run `praxis enable --cwd .`",
-            "`disable`: run `praxis disable --cwd .`",
-            "`status`: run `praxis status --cwd .`",
-            "Do not ask the user to run the underlying CLI",
-        ):
-            self.assertIn(expected, text)
+        self.assertIn("## Core loop", text)
+        self.assertIn("only when the current project is explicitly enabled", text)
+        for action in ("enable", "disable", "status"):
+            self.assertNotIn(f"praxis {action} --cwd", text)
 
     def test_cursor_exposes_praxis_command(self) -> None:
         manifest = json.loads(
@@ -50,7 +47,7 @@ class PraxisCommandSurfaceTests(unittest.TestCase):
             "/praxis disable",
             "/praxis status",
             "/praxis:enable",
-            "$praxis enable",
+            "$praxis:praxis-enable",
         ):
             self.assertIn(expected, text)
         self.assertNotIn("python3 -m praxis enable --cwd .", text)

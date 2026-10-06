@@ -130,7 +130,7 @@ class RepositoryContractTests(unittest.TestCase):
             "I don't know",
             "/praxis enable",
             "/praxis:enable",
-            "$praxis enable",
+            "$praxis:praxis-enable",
             "Codex",
             "DeepSeek Harness / Cordis",
             "Cursor",

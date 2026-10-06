@@ -31,7 +31,7 @@ The existing `skills/praxis/` and `praxis/` trees are referenced in place and ar
 The shared skills directory also exposes `praxis-enable`, `praxis-disable`, and
 `praxis-status` as direct skill-picker entries. Each runs the corresponding
 existing neutral CLI command with `--cwd .` and reports its actual result.
-The shared Tutor skill continues to accept control arguments for compatibility.
+The shared Tutor skill provides only Tutor behavior for explicitly enabled projects.
 
 ## Lifecycle contract
 
