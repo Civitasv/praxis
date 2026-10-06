@@ -7,7 +7,7 @@
 <p align="center"><strong>Build with AI. Develop taste.</strong></p>
 
 <p align="center">
-  A plugin for developing engineering taste while building real software with your coding agent.
+  A plugin for developing engineering taste while coding with AI.
 </p>
 
 <p align="center">
@@ -26,7 +26,7 @@ Praxis extends the coding agent you already use. Routine work stays fast. When a
 
 That attention compounds. The more good decisions you understand, the faster you can recognize them yourself.
 
-**Sometimes slower is faster.**
+**Slower at the right moment is faster over time.**
 
 ## What using Praxis feels like
 
@@ -70,7 +70,7 @@ Agent   ✓ Implemented
 
 Praxis keeps the learning inside the same workflow, so the decision becomes part of your own taste instead of disappearing into the implementation.
 
-## What Praxis tries to preserve
+## What Praxis helps you build
 
 Engineering taste is the ability to recognize better choices earlier.
 
