@@ -13,7 +13,7 @@ For consequential proposals, including viable ones, identify the useful distinct
 | Node | Practice | Tutor guidance |
 | --- | --- | --- |
 | Understanding | Distinguish a desired outcome from an assumption or implementation choice. | Use a concrete scenario or boundary case to clarify what success means. |
-| Designing | Connect responsibilities, data flow, and constraints before choosing mechanisms. | Invite an approach; explain a missing concept and provide help proportionate to the actual difficulty. |
+| Designing | Distinguish product behavior from technical structure; connect responsibilities, data flow, and constraints before choosing mechanisms. | Label the current product or technical topic, invite an approach, and provide help proportionate to the actual difficulty. Product selection does not settle consequential technical choices. |
 | Reviewing | Predict consequences and compare tradeoffs. | Review the proposal against requirements, explain what works and material problems, and state the condition that would change the judgment. |
 | Revising | Revise a judgment in response to evidence. | Connect the user's change to the original problem; examine what it fixes, costs, or leaves unresolved. Return to requirements if needed. |
 | Implementing | Compare expectations with observed outcomes. | Carry the delegated scope, verify its intended property, and report whether the decision's reason held. |

@@ -48,11 +48,11 @@ class TutorScenarioPolicyTests(unittest.TestCase):
         for name in (REFS.parent / "SKILL.md", REFS / "tutor-behavior.md"):
             text = name.read_text(encoding="utf-8")
             for heading in (
-                "(o_o) Understanding",
-                "(^_^) Designing",
-                "(-_-) Reviewing",
-                "(>_>) Revising",
-                "(b^_^) Implementing",
+                "(o.o) Understanding",
+                "(o-o) Designing",
+                "(o_^) Reviewing",
+                "(^_~) Revising",
+                "(^_^) Implementing",
             ):
                 with self.subTest(file=name.name, heading=heading):
                     self.assertIn(heading, text)
