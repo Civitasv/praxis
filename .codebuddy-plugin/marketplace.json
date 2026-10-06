@@ -1,0 +1,17 @@
+{
+  "name": "praxis",
+  "owner": {
+    "name": "Civitasv"
+  },
+  "plugins": [
+    {
+      "name": "praxis",
+      "source": {
+        "source": "github",
+        "repo": "Civitasv/praxis"
+      },
+      "description": "Build with AI while keeping consequential engineering judgment visible.",
+      "version": "0.1.0"
+    }
+  ]
+}
