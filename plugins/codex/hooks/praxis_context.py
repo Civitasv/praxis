@@ -17,15 +17,33 @@ if str(PLUGIN_ROOT) not in sys.path:
     sys.path.insert(0, str(PLUGIN_ROOT))
 
 from praxis.decisions import decision_blocked_scopes, list_open_decisions  # noqa: E402
-from praxis.project import discover_project_root  # noqa: E402
-from praxis.project_map import project_model_status, refresh_staleness  # noqa: E402
-from praxis.state import load_state  # noqa: E402
+from praxis.fingerprints import EvidenceError  # noqa: E402
+from praxis.locking import LockTimeoutError  # noqa: E402
+from praxis.project import UnsafeStatePathError, discover_project_root  # noqa: E402
+from praxis.project_map import ProjectModelError, project_model_status, refresh_staleness  # noqa: E402
+from praxis.state import PraxisStateError, load_state  # noqa: E402
 from praxis.tasks import pending_tasks  # noqa: E402
 
 
 MAX_CONTEXT_CHARS = 3000
 _ALLOWED_EVENTS = {"SessionStart", "UserPromptSubmit"}
 _SESSION_SOURCES = {"startup", "resume", "clear", "compact"}
+_RECOVERABLE_ERRORS = (
+    PraxisStateError,
+    ProjectModelError,
+    EvidenceError,
+    UnsafeStatePathError,
+    LockTimeoutError,
+    OSError,
+    UnicodeError,
+)
+_RECOVERY_FOOTER = "Recovery is not approval. Use the shared Praxis Tutor Skill for details."
+_FALLBACK_CONTEXT = (
+    "Praxis automatic recovery is unavailable. "
+    "Use the shared Praxis Tutor Skill manually. "
+    "Do not assume durable state was restored. "
+    "Recovery is not approval."
+)
 
 
 def _valid_event(event: object) -> dict[str, Any] | None:
@@ -65,6 +83,30 @@ def _exact_codex_tasks(state: dict[str, Any], session_id: object) -> list[tuple[
     return matches
 
 
+def _bounded_context(lines: list[str]) -> str:
+    """Render deterministic priority-ordered lines within the product hard cap."""
+
+    kept: list[str] = []
+    budget = MAX_CONTEXT_CHARS - len(_RECOVERY_FOOTER) - 1
+    for line in lines:
+        separator = 1 if kept else 0
+        remaining = budget - sum(len(item) for item in kept) - max(0, len(kept) - 1)
+        if remaining <= separator:
+            break
+        available = remaining - separator
+        if len(line) <= available:
+            kept.append(line)
+            continue
+        if available > 1:
+            kept.append(line[: available - 1] + "…")
+        break
+
+    if not kept:
+        return _RECOVERY_FOOTER[:MAX_CONTEXT_CHARS]
+    return "\n".join(kept) + "\n" + _RECOVERY_FOOTER
+
+
+
 def build_context(event: dict[str, Any]) -> str | None:
     """Build bounded Tutor context without interpreting prompt/transcript data."""
 
@@ -77,7 +119,10 @@ def build_context(event: dict[str, Any]) -> str | None:
     except (OSError, ValueError):
         return None
 
-    state = load_state(project_root)
+    try:
+        state = load_state(project_root)
+    except _RECOVERABLE_ERRORS:
+        return _FALLBACK_CONTEXT
     if state is None:
         return None
     if not state["enabled"]:
@@ -86,7 +131,10 @@ def build_context(event: dict[str, Any]) -> str | None:
             "Do not activate Tutor behavior until the user explicitly resumes it."
         )
 
-    state = refresh_staleness(project_root)
+    try:
+        state = refresh_staleness(project_root)
+    except _RECOVERABLE_ERRORS:
+        return _FALLBACK_CONTEXT
     lines = [
         "Praxis is enabled for this project.",
         "Load and follow the shared Praxis Tutor Skill.",
@@ -126,13 +174,15 @@ def build_context(event: dict[str, Any]) -> str | None:
         if blocked:
             lines.append("Blocked scopes: " + ", ".join(blocked))
 
-    model = project_model_status(project_root)
+    try:
+        model = project_model_status(project_root)
+    except _RECOVERABLE_ERRORS:
+        return _FALLBACK_CONTEXT
     stale = model.get("stale_sections", [])
     if stale:
         lines.append("Stale project sections: " + ", ".join(stale))
 
-    lines.append("Recovery is not approval.")
-    return "\n".join(lines)
+    return _bounded_context(lines)
 
 
 def build_response(event_name: str, context: str) -> dict[str, Any]:
