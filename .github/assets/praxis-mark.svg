@@ -1,0 +1,10 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Praxis mark</title>
+  <rect x="4" y="4" width="112" height="112" rx="28" fill="#0B0D0E"/>
+  <rect x="4.5" y="4.5" width="111" height="111" rx="27.5" stroke="#FFFFFF" stroke-opacity="0.08"/>
+  <path d="M60 95V61" stroke="#F3F0E8" stroke-width="8" stroke-linecap="round"/>
+  <path d="M60 61C60 49 51 43 41 37C34 33 30 28 30 21" stroke="#6C7175" stroke-width="8" stroke-linecap="round"/>
+  <path d="M60 61C60 47 70 40 81 34C88 30 92 25 92 18" stroke="#F3F0E8" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="60" cy="61" r="5.5" fill="#E9A23B"/>
+  <circle cx="92" cy="18" r="5.5" fill="#E9A23B"/>
+</svg>

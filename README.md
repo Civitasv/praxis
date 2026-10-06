@@ -1,91 +1,90 @@
-# Praxis
+<p align="center">
+  <img src=".github/assets/praxis-mark.svg" width="96" height="96" alt="Praxis">
+</p>
 
-**Build with AI. Keep the judgment.**
+<h1 align="center">Praxis</h1>
 
-Praxis is an AI tutor for building software with coding agents.
+<p align="center"><strong>Build with AI. Keep the judgment.</strong></p>
 
-AI has made it dramatically easier to produce software. But producing a working artifact is not the same thing as experiencing the decisions required to build it, and it is not the same thing as gaining the judgment to make those decisions again.
+<p align="center">
+  A tutor layer for coding agents that keeps consequential engineering decisions visible<br>
+  while the agent handles the mechanical work.
+</p>
 
-Praxis is built around that gap.
+<p align="center">
+  <sub>Codex · Cursor · CodeBuddy · DeepSeek Harness</sub>
+</p>
+
+---
 
 ## Philosophy
 
-For most of software history, engineering judgment was accumulated through repetition:
+**The new bottleneck is judgment.**
 
-```text
-make a decision
-→ implement it
-→ observe what happened
-→ update your mental model
-→ make a better decision next time
-```
+Coding agents can now produce working software without exposing much of the reasoning that shaped it.
 
-Coding agents can now skip much of that experience. They can choose the data model, architecture, state ownership, failure strategy, dependency, and API shape — then hand you a finished implementation.
+That is useful. It also creates a strange failure mode:
 
-That is useful, but it creates a new failure mode:
+> You can get much better at producing software without getting much better at engineering it.
 
-> You can become much better at producing software without becoming much better at engineering it.
+Praxis is built for that gap.
 
-Praxis keeps the productive part of AI automation while preserving the part that builds judgment.
+It stays quiet during mechanical work. When a choice is consequential enough to shape the system — data ownership, state boundaries, failure behavior, dependencies, API shape, migration strategy — Praxis makes the decision legible before the agent commits to it.
 
-The agent should handle mechanical execution. Praxis keeps consequential choices visible.
-
-When a decision matters, Praxis should help you understand:
-
-- what is actually being decided;
-- what constraints the real project imposes;
-- what the meaningful alternatives are;
-- what each alternative gives up;
-- what happened after the choice was implemented.
-
-Then the agent can keep moving.
-
-Praxis is not a quiz system and it does not try to slow work down for the sake of teaching. The learning happens inside the real project, through real decisions and their consequences.
-
-If you do not know the answer, **“I don't know” is a valid answer**. Praxis should explain enough for the next meaningful choice instead of turning the interaction into an exam.
+Then the agent keeps moving.
 
 ## What using Praxis feels like
 
-Without Praxis:
-
 ```text
-You: Add persistent chat history.
+You     Add persistent chat history.
 
-Agent: Done.
-```
-
-With Praxis:
-
-```text
-You: Add persistent chat history.
-
-Praxis: There is one consequential choice before implementation:
+Praxis  One decision matters first:
         what owns durable message history?
 
-        Redis-only is simpler, but losing Redis loses history.
-        A database source of truth adds another dependency but gives
-        durable ownership and makes Redis disposable.
+        A. Redis is the source of truth.
+           Simpler, but losing Redis loses history.
 
-You: I don't know which one I want.
+        B. The database is the source of truth.
+           More durable; Redis stays disposable.
 
-Praxis: If message history must survive cache loss or restarts,
-        use the database as the source of truth and Redis only for
-        transient delivery/cache behavior.
+You     I don't know.
 
-You: Do that.
+Praxis  If history must survive cache loss or restarts, choose B.
+        I’ll make that assumption explicit and let the agent continue.
 
-Agent: Implements it and verifies restart behavior.
+Agent   ✓ Implemented
 
-Praxis: The implementation matched the decision:
-        history survived the Redis restart, so the ownership boundary
-        behaved as intended.
+Praxis  ✓ Verified: history survived a Redis restart.
 ```
 
-The point is not that you typed more. The point is that the important decision stayed visible long enough to become part of your own mental model.
+The goal is not to make you type more.
+
+The goal is to keep the important decision visible long enough for it to become part of your own mental model.
+
+## How Praxis behaves
+
+| Situation | Praxis |
+| --- | --- |
+| Mechanical implementation | Stays out of the way |
+| Consequential engineering choice | Surfaces the decision |
+| You know what you want | Records the rationale and continues |
+| You are unsure | Explains the real tradeoff, without turning it into a quiz |
+| Implementation finishes | Checks whether reality matched the decision |
+| A new session starts | Restores the durable decision context |
+
+The loop is simple:
+
+**surface → decide → implement → verify → retain**
+
+Praxis should make the agent more productive **without making you less capable**.
 
 ## Install
 
-Requires Python 3.10+. Install the Praxis CLI:
+Praxis has a small host-neutral Python core plus an integration for the coding agent you use.
+
+### 1. Install the core
+
+Requires Python 3.10+.
 
 ```bash
 python3 -m pip install --user 'git+https://github.com/Civitasv/praxis.git'
@@ -93,99 +92,76 @@ python3 -m pip install --user 'git+https://github.com/Civitasv/praxis.git'
 
 On Windows, replace `python3` with `py`.
 
-Then install the integration for the agent you use.
+### 2. Add your agent integration
 
-### Codex
+<details>
+<summary><strong>Codex</strong></summary>
 
 ```bash
 codex plugin marketplace add Civitasv/praxis
 codex plugin add praxis@praxis
 ```
 
-### Cursor
+Enable Praxis in the project:
 
-```bash
-mkdir -p ~/.cursor/plugins/local && git clone --depth 1 https://github.com/Civitasv/praxis.git ~/.cursor/plugins/local/praxis
+```text
+$praxis:praxis-enable
 ```
 
-Restart Cursor.
+You can also select **Praxis Enable** from the Codex skill picker.
 
-### DeepSeek Harness / Cordis
+</details>
 
-Requires `pnpm` on `PATH`. Replace `web` with your profile name:
+<details>
+<summary><strong>Cursor</strong></summary>
+
+```bash
+mkdir -p ~/.cursor/plugins/local
+git clone --depth 1 https://github.com/Civitasv/praxis.git ~/.cursor/plugins/local/praxis
+```
+
+Restart Cursor, then run:
+
+```text
+/praxis enable
+```
+
+</details>
+
+<details>
+<summary><strong>DeepSeek Harness / Cordis</strong></summary>
+
+Requires `pnpm` on `PATH`. Replace `web` with your profile name.
 
 ```bash
 dsh plugin --profile web add github:Civitasv/praxis
 dsh --profile web
 ```
 
-### CodeBuddy
+Then run:
+
+```text
+/praxis enable
+```
+
+</details>
+
+<details>
+<summary><strong>CodeBuddy</strong></summary>
 
 ```bash
 codebuddy plugin marketplace add Civitasv/praxis --name praxis && codebuddy plugin install praxis@praxis
 ```
 
-## Update Praxis
-
-Update the Praxis CLI, then your agent integration:
-
-```bash
-python3 -m pip install --user --upgrade 'git+https://github.com/Civitasv/praxis.git'
-```
-
-### Codex
-
-```bash
-codex plugin marketplace upgrade praxis
-codex plugin add praxis@praxis
-```
-
-Open a new chat to load the updated skill.
-
-### Cursor
-
-```bash
-git -C ~/.cursor/plugins/local/praxis pull --ff-only
-```
-
-Restart Cursor.
-
-### DeepSeek Harness / Cordis
-
-Use the profile where you installed Praxis:
-
-```bash
-dsh plugin --profile web update praxis
-dsh --profile web
-```
-
-### CodeBuddy
-
-```bash
-codebuddy plugin marketplace update praxis && codebuddy plugin update praxis@praxis
-```
-
-Reload plugins in CodeBuddy:
+Then run:
 
 ```text
-/reload-plugins
+/praxis:enable
 ```
 
-## Enable Praxis in a project
+</details>
 
-Open your project and enable Praxis with your agent's command:
-
-| Agent | Enable | Disable | Status |
-| --- | --- | --- | --- |
-| Cursor | `/praxis enable` | `/praxis disable` | `/praxis status` |
-| DeepSeek Harness | `/praxis enable` | `/praxis disable` | `/praxis status` |
-| CodeBuddy | `/praxis:enable` | `/praxis:disable` | `/praxis:status` |
-| Codex | `$praxis:praxis-enable` | `$praxis:praxis-disable` | `$praxis:praxis-status` |
-
-In Codex's skill picker, select Praxis Enable, Praxis Disable, or Praxis Status directly.
-The shared Praxis skill provides Tutor behavior for enabled projects.
-
-Then ask the coding agent to build something:
+Once enabled, just work normally:
 
 ```text
 Add organization-level API keys.
@@ -197,38 +173,128 @@ Add retries to the payment workflow.
 Refactor authentication so web and CLI share the same session model.
 ```
 
-Praxis should stay out of mechanical work and intervene when a choice is consequential enough to improve future engineering judgment.
+Praxis should intervene only when there is something worth learning from.
 
-When it surfaces a decision, you can:
+## Not a quiz. Not a second agent.
 
-- give your current proposal;
-- ask for the tradeoffs;
-- say you are unsure;
-- accept a recommendation;
-- choose a different direction and explain why.
+Praxis is not trying to become another autonomous coder.
 
-Once the decision is explicit, the agent continues implementation and verification.
+It does not interrupt every implementation detail, ask you to defend obvious choices, or slow the project down for the sake of “teaching.”
+
+If you do not know the answer, **“I don't know” is a valid answer**.
+
+Praxis should give you just enough structure to understand the next meaningful choice, then hand execution back to the coding agent.
 
 ## What Praxis tries to preserve
 
-Praxis is designed around a simple separation:
+For most of software history, engineering judgment was built through repetition:
 
-**AI should remove unnecessary effort. It should not remove the experiences from which judgment is formed.**
+```text
+make a decision
+→ implement it
+→ observe what happened
+→ update your mental model
+→ make a better decision next time
+```
 
-That means a healthy Praxis session should leave you with more than a finished diff. You should also know why important choices were made, what tradeoffs were accepted, and whether reality supported the original reasoning.
+AI compresses the implementation step dramatically.
 
-Over time, the goal is not to make you dependent on Praxis.
+Praxis exists so it does not accidentally compress away the learning loop too.
 
-The goal is for decisions that once required explanation to become decisions you can make well yourself.
+The durable output is not only the diff. It is also:
+
+- the important choice that was made;
+- the constraints that shaped it;
+- the tradeoff that was accepted;
+- the evidence that later confirmed or challenged it.
+
+Over time, decisions that once needed explanation should become decisions you can make well yourself.
+
+That is the point.
+
+## Commands
+
+| Agent | Enable | Disable | Status |
+| --- | --- | --- | --- |
+| Cursor | `/praxis enable` | `/praxis disable` | `/praxis status` |
+| DeepSeek Harness | `/praxis enable` | `/praxis disable` | `/praxis status` |
+| CodeBuddy | `/praxis:enable` | `/praxis:disable` | `/praxis:status` |
+| Codex | `$praxis:praxis-enable` | `$praxis:praxis-disable` | `$praxis:praxis-status` |
+
+The shared Praxis skill provides Tutor behavior for enabled projects; project controls live in the dedicated Codex control skills.
+
+## Update Praxis
+
+Update the core first:
+
+```bash
+python3 -m pip install --user --upgrade 'git+https://github.com/Civitasv/praxis.git'
+```
+
+Then update your agent integration.
+
+<details>
+<summary><strong>Codex</strong></summary>
+
+```bash
+codex plugin marketplace upgrade praxis
+codex plugin add praxis@praxis
+```
+
+Open a new chat to load the updated skill.
+
+</details>
+
+<details>
+<summary><strong>Cursor</strong></summary>
+
+```bash
+git -C ~/.cursor/plugins/local/praxis pull --ff-only
+```
+
+Restart Cursor.
+
+</details>
+
+<details>
+<summary><strong>DeepSeek Harness / Cordis</strong></summary>
+
+```bash
+dsh plugin --profile web update praxis
+dsh --profile web
+```
+
+</details>
+
+<details>
+<summary><strong>CodeBuddy</strong></summary>
+
+```bash
+codebuddy plugin marketplace update praxis && codebuddy plugin update praxis@praxis
+```
+
+Then reload plugins:
+
+```text
+/reload-plugins
+```
+
+</details>
+
+## Status
+
+Praxis is currently **alpha**.
+
+The repository ships working integrations for Codex, Cursor, CodeBuddy, and DeepSeek Harness / Cordis. Distribution is currently source-based; public marketplace publication is not claimed yet.
 
 ## Documentation
 
-README is intentionally product-facing. Implementation details and repository internals live under `Docs/`:
+The README is intentionally product-facing. Implementation details live under `Docs/`.
 
 - [Architecture overview](Docs/Architecture/Overview.md)
 - [Tutor model](Docs/Architecture/Tutor%20Model.md)
-- [Codex, Cursor, CodeBuddy, and DSH integration](Docs/Architecture/Harness%20Integration.md)
+- [Harness integrations](Docs/Architecture/Harness%20Integration.md)
 - [Feature specifications](Docs/Specs/)
 - [Development and validation](Docs/Development/Validation.md)
 
-For contributors working on the repository itself, start with [Code.md](Code.md) and [State.md](State.md).
+Contributors should start with [Code.md](Code.md) and [State.md](State.md).
