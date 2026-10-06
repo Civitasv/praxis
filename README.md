@@ -70,7 +70,7 @@ Praxis keeps the learning inside the same workflow.
 
 ## What Praxis tries to preserve
 
-Judgment grows by connecting decisions to consequences:
+Engineering taste grows by connecting decisions to consequences:
 
 ```text
 decide
