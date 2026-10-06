@@ -80,7 +80,7 @@ Feature-06: Implemented
 
 - `plugins/dsh/` is a native Cordis plugin targeting the pinned DSH preview family `0.2.1-alpha.1` with Cordis `4.0.5-alpha.1`.
 - `plugins/dsh/src/skill.ts` registers the single shared `skills/praxis/SKILL.md` as model- and user-invocable; no Skill copy lives under `plugins/dsh/`.
-- `plugins/dsh/src/praxis-cli.ts` executes `python3 -m praxis recovery-status` with direct argv, `shell: false`, project cwd, session id as a separate argument, and the Praxis repository root prepended to `PYTHONPATH`.
+- `plugins/dsh/src/praxis-cli.ts` executes the neutral `praxis recovery-status` module with direct argv and `shell: false`; the default launcher is `python3` on POSIX and `py -3` on Windows, `PRAXIS_PYTHON` can override the executable path, and project cwd/session id remain separate arguments with the Praxis repository root prepended to `PYTHONPATH`.
 - `plugins/dsh/src/context.ts` renders deterministic recovery/fallback context capped at 3000 characters and flattens free-form task/decision/scope labels before injection.
 - `plugins/dsh/src/lifecycle.ts` declares the `praxis-dsh` instructions message source.
 - `agent/created` synchronizes startup/resume lifecycle context through `agent.inject()`; uninitialized projects are silent and recovery failures are contained so Praxis cannot reject Agent creation.
