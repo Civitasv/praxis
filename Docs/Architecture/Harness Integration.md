@@ -9,12 +9,15 @@ praxis/                 # neutral Python semantics
 skills/praxis/          # shared behavior
 plugins/codex/          # Codex-only lifecycle/package code
 plugins/dsh/            # DSH/Cordis-only lifecycle/package code
+plugins/cursor/         # Cursor-only hook adapter
+plugins/codebuddy/      # CodeBuddy-only hook adapter
+plugins/shared/         # host-adapter recovery CLI bridge
 ```
 
 Host adapters may:
 - resolve host session identity;
 - translate lifecycle events;
-- invoke/reuse the neutral Python core;
+- invoke/reuse the neutral Python core or CLI;
 - inject concise recovery guidance;
 - register host-native packaging or Skill surfaces.
 
@@ -22,7 +25,7 @@ Host adapters may not:
 - own project-state transitions;
 - infer approval from resume/compaction/prompt text;
 - fork the durable state model;
-- place Harness SDK imports in `praxis/`;
+- place host SDK imports in `praxis/`;
 - depend on transcript formats for correctness.
 
 ## Codex — Feature-05
@@ -51,8 +54,36 @@ The TypeScript subprocess bridge uses **direct argv** execution with `execFile` 
 
 Cordis owns cleanup. Disposing the plugin removes listeners and the Skill contribution without touching `.praxis`.
 
-Codex and DSH share the same project-local `.praxis/` records. Cross-host recovery restores persisted facts only; it does not fabricate missing chat context or mutate lifecycle merely because a host session resumed.
+## Cursor — Feature-07
+
+Cursor integration is **translation-only** and uses the existing `praxis recovery-status` CLI through `plugins/shared/recovery_hook.py`.
+
+The Cursor package is declared by `.cursor-plugin/plugin.json`, references the root `skills/` directory, and loads `plugins/cursor/hooks/hooks.json`.
+
+`sessionStart` resolves the project from `CURSOR_PROJECT_DIR`, uses Cursor session/conversation identity, and injects bounded recovery context through Cursor's documented `additional_context` response.
+
+Cursor's native `beforeSubmitPrompt` currently does not support per-prompt context injection. Praxis still runs `recovery-status` there so project freshness is synchronized, but returns only `continue: true`; current recovery context remains available through the shared Skill/CLI rather than an invented hook field.
+
+Prompt and transcript contents are ignored for approval semantics. Hook failures fail open. Cursor cloud environments where `sessionStart` is unavailable rely on the shared Skill/CLI path.
+
+**No MCP** server or MCP configuration is part of the Cursor integration.
+
+## CodeBuddy — Feature-07
+
+CodeBuddy integration is **translation-only** and uses the same shared Python recovery bridge.
+
+The package is declared by `.codebuddy-plugin/plugin.json`, reuses root `skills/`, and loads `plugins/codebuddy/hooks/hooks.json`.
+
+`SessionStart` and `UserPromptSubmit` both run `praxis recovery-status --host codebuddy`. When Praxis is enabled, the adapter injects bounded context through CodeBuddy's documented `hookSpecificOutput.additionalContext` response. `UserPromptSubmit` also returns `continue: true`, so Praxis never blocks ordinary prompt processing.
+
+Prompt/transcript contents are not parsed as approval. Recovery failures degrade to the manual shared-Skill fallback while remaining fail-open.
+
+**No MCP** server or MCP configuration is part of the CodeBuddy integration.
+
+## Cross-host state
+
+Codex, DSH, Cursor, and CodeBuddy share the same project-local `.praxis/` records. Cross-host recovery restores persisted facts only; it does not fabricate missing chat context or mutate lifecycle merely because a host session resumed.
 
 ## Distribution boundary
 
-Repository CI validates both adapters without claiming external deployment. Feature-06 does not install `@praxis/plugin-dsh` into a DSH profile, mutate profile configuration, or claim npm publication. Host/package installation remains a separate user/deployment action.
+Repository CI validates host adapters without claiming external deployment or marketplace publication. Host installation, enablement, and trust remain separate user/deployment actions.
