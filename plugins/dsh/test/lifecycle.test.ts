@@ -146,7 +146,7 @@ test('agent lifecycle forwards cancellation and suppresses fallback after abort'
     const { agent, injected } = stubAgent(ctx)
     ctx.agents.enter(agent, undefined)
     const announcing = ctx.agents.announce(agent, 'resume', controller.signal)
-    const observed = await entered.promise
+    const observed = await entered
     assert.equal(observed.aborted, false)
     controller.abort(new Error('cancel lifecycle'))
     await assert.doesNotReject(announcing)
