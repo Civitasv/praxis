@@ -9,6 +9,24 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
+from .decisions import (
+    DecisionConflictError,
+    DecisionError,
+    DecisionRenderError,
+    InvalidDecisionError,
+    InvalidDecisionTransitionError,
+    UnknownDecisionError,
+    UnknownTaskError,
+    abandon_decision,
+    add_later_evidence,
+    create_decision,
+    decisions_status,
+    record_implementation,
+    record_verification,
+    render_decisions,
+    select_decision,
+    supersede_decision,
+)
 from .fingerprints import EvidenceError
 from .locking import LockTimeoutError
 from .project import UnsafeStatePathError, discover_project_root
@@ -51,6 +69,12 @@ class JsonArgumentParser(argparse.ArgumentParser):
 
 def _add_cwd(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--cwd", required=True)
+
+
+def _add_decision_target(parser: argparse.ArgumentParser) -> None:
+    _add_cwd(parser)
+    parser.add_argument("--decision-id", required=True)
+    parser.add_argument("--expected-decision-revision", type=int, required=True)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -106,6 +130,50 @@ def build_parser() -> argparse.ArgumentParser:
 
     map_render = subparsers.add_parser("map-render")
     _add_cwd(map_render)
+
+    decision_status = subparsers.add_parser("decision-status")
+    _add_cwd(decision_status)
+    decision_status.add_argument("--task-id")
+
+    decision_create = subparsers.add_parser("decision-create")
+    _add_cwd(decision_create)
+    decision_create.add_argument("--task-id", required=True)
+    decision_create.add_argument("--class", dest="decision_class", required=True)
+    decision_create.add_argument("--title", required=True)
+    decision_create.add_argument("--context", required=True)
+    decision_create.add_argument("--user-proposal")
+    decision_create.add_argument("--verified-constraint", action="append", default=[])
+    decision_create.add_argument("--praxis-challenge")
+    decision_create.add_argument("--alternative", action="append", default=[])
+    decision_create.add_argument("--blocked-scope", action="append", default=[])
+
+    decision_select = subparsers.add_parser("decision-select")
+    _add_decision_target(decision_select)
+    decision_select.add_argument("--selected-decision", required=True)
+    decision_select.add_argument("--user-reasoning")
+    decision_select.add_argument("--accepted-tradeoff", action="append", default=[])
+
+    decision_implemented = subparsers.add_parser("decision-implemented")
+    _add_decision_target(decision_implemented)
+    decision_implemented.add_argument("--result", required=True)
+
+    decision_verify = subparsers.add_parser("decision-verify")
+    _add_decision_target(decision_verify)
+    decision_verify.add_argument("--result", required=True)
+
+    decision_supersede = subparsers.add_parser("decision-supersede")
+    _add_decision_target(decision_supersede)
+    decision_supersede.add_argument("--superseding-decision-id", required=True)
+
+    decision_abandon = subparsers.add_parser("decision-abandon")
+    _add_decision_target(decision_abandon)
+
+    decision_evidence = subparsers.add_parser("decision-evidence")
+    _add_decision_target(decision_evidence)
+    decision_evidence.add_argument("--evidence", required=True)
+
+    decision_render = subparsers.add_parser("decision-render")
+    _add_cwd(decision_render)
     return parser
 
 
@@ -123,6 +191,20 @@ def _success(project_root: Path, state: dict[str, Any] | None, **extra: Any) -> 
 def _error_code(error: Exception) -> str:
     if isinstance(error, RevisionConflictError):
         return "revision_conflict"
+    if isinstance(error, DecisionConflictError):
+        return "decision_conflict"
+    if isinstance(error, UnknownTaskError):
+        return "unknown_task"
+    if isinstance(error, UnknownDecisionError):
+        return "unknown_decision"
+    if isinstance(error, InvalidDecisionTransitionError):
+        return "invalid_transition"
+    if isinstance(error, DecisionRenderError):
+        return "decision_render_failed"
+    if isinstance(error, InvalidDecisionError):
+        return "invalid_decision"
+    if isinstance(error, DecisionError):
+        return "invalid_decision"
     if isinstance(error, SectionConflictError):
         return "section_conflict"
     if isinstance(error, UnknownSectionError):
@@ -158,6 +240,10 @@ def _error_code(error: Exception) -> str:
 
 def _emit(payload: dict[str, Any]) -> None:
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+
+
+def _decision_success(project_root: Path, state: dict[str, Any], **extra: Any) -> dict[str, Any]:
+    return _success(project_root, state, decisions=decisions_status(project_root), **extra)
 
 
 def _run_command(args: argparse.Namespace) -> dict[str, Any]:
@@ -222,6 +308,77 @@ def _run_command(args: argparse.Namespace) -> dict[str, Any]:
             project_model=project_model_status(project_root),
             code_path=str(code_path),
         )
+    if args.command == "decision-status":
+        state = load_state(project_root)
+        return _success(project_root, state, decisions=decisions_status(project_root, task_id=args.task_id))
+    if args.command == "decision-create":
+        decision_id, state = create_decision(
+            project_root,
+            args.task_id,
+            args.decision_class,
+            args.title,
+            args.context,
+            user_proposal=args.user_proposal,
+            verified_constraints=args.verified_constraint,
+            praxis_challenge=args.praxis_challenge,
+            alternatives=args.alternative,
+            blocked_scopes=args.blocked_scope,
+        )
+        return _decision_success(project_root, state, decision_id=decision_id)
+    if args.command == "decision-select":
+        state = select_decision(
+            project_root,
+            args.decision_id,
+            args.expected_decision_revision,
+            args.selected_decision,
+            user_reasoning=args.user_reasoning,
+            accepted_tradeoffs=args.accepted_tradeoff,
+        )
+        return _decision_success(project_root, state, decision_id=args.decision_id)
+    if args.command == "decision-implemented":
+        state = record_implementation(
+            project_root,
+            args.decision_id,
+            args.expected_decision_revision,
+            args.result,
+        )
+        return _decision_success(project_root, state, decision_id=args.decision_id)
+    if args.command == "decision-verify":
+        state = record_verification(
+            project_root,
+            args.decision_id,
+            args.expected_decision_revision,
+            args.result,
+        )
+        return _decision_success(project_root, state, decision_id=args.decision_id)
+    if args.command == "decision-supersede":
+        state = supersede_decision(
+            project_root,
+            args.decision_id,
+            args.expected_decision_revision,
+            args.superseding_decision_id,
+        )
+        return _decision_success(project_root, state, decision_id=args.decision_id)
+    if args.command == "decision-abandon":
+        state = abandon_decision(project_root, args.decision_id, args.expected_decision_revision)
+        return _decision_success(project_root, state, decision_id=args.decision_id)
+    if args.command == "decision-evidence":
+        state = add_later_evidence(
+            project_root,
+            args.decision_id,
+            args.expected_decision_revision,
+            args.evidence,
+        )
+        return _decision_success(project_root, state, decision_id=args.decision_id)
+    if args.command == "decision-render":
+        decisions_path = render_decisions(project_root)
+        state = load_state(project_root)
+        return _success(
+            project_root,
+            state,
+            decisions=decisions_status(project_root),
+            decisions_path=str(decisions_path),
+        )
     raise CliUsageError("a Praxis command is required")
 
 
@@ -235,6 +392,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         payload = _run_command(args)
     except (
         PraxisStateError,
+        DecisionError,
         ProjectModelError,
         EvidenceError,
         UnsafeStatePathError,

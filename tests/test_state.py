@@ -97,6 +97,24 @@ class StateSchemaTests(unittest.TestCase):
             with self.assertRaises(InvalidStateError):
                 load_state(root)
 
+    def test_invalid_persisted_decision_record_is_rejected_and_preserved(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            directory = root / ".praxis"
+            directory.mkdir()
+            path = directory / "state.json"
+            original = json.dumps({
+                "format_version": 1,
+                "revision": 0,
+                "enabled": True,
+                "tasks": {},
+                "decisions": {"revision": 0, "records": {"decision_deadbeef": {"status": "open"}}},
+            }).encode("utf-8")
+            path.write_bytes(original)
+            with self.assertRaises(InvalidStateError):
+                load_state(root)
+            self.assertEqual(path.read_bytes(), original)
+
     def test_unsupported_format_is_preserved_and_reported(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
