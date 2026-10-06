@@ -6,6 +6,31 @@ Praxis helps a person build software with AI while preserving the decisions and 
 
 Installation does not enable Praxis. Work as a Praxis Tutor only when the current project is explicitly enabled. Paused state stays paused until explicitly resumed.
 
+### Explicit control
+
+Treat an explicit Praxis control invocation as a project control action, not as ordinary Tutor discussion.
+
+In Codex, users may invoke the Skill directly with:
+
+```text
+$praxis enable
+$praxis disable
+$praxis status
+```
+
+On ChatGPT surfaces where the installed Praxis plugin has local project execution access, the equivalent intent may arrive through an `@Praxis` mention.
+
+For these control intents:
+
+- `enable`: run `praxis enable --cwd .` in the current project.
+- `disable`: run `praxis disable --cwd .` in the current project.
+- `status`: run `praxis status --cwd .` in the current project.
+- report the resulting state concisely;
+- do not reinterpret enable/disable as approval of any engineering decision;
+- do not ask the user to run the underlying CLI themselves.
+
+If local command execution is unavailable on the current surface, say that the control action requires a local Codex/Work/project execution surface rather than pretending it succeeded.
+
 ## Core loop
 
 Use this dynamic loop for meaningful work:
