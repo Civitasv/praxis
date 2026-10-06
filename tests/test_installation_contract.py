@@ -73,7 +73,6 @@ class InstallationContractTests(unittest.TestCase):
             "## Install",
             "python3 -m pip install --user 'git+https://github.com/Civitasv/praxis.git'",
             "codex plugin marketplace add Civitasv/praxis",
-            "/plugins",
             "git clone --depth 1 https://github.com/Civitasv/praxis.git ~/.cursor/plugins/local/praxis",
             "dsh plugin --profile web add github:Civitasv/praxis",
             "codebuddy plugin marketplace add Civitasv/praxis --name praxis && codebuddy plugin install praxis@praxis",

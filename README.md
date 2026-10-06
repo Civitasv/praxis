@@ -102,12 +102,6 @@ codex plugin marketplace add Civitasv/praxis
 codex plugin add praxis@praxis
 ```
 
-Alternatively, install **Praxis** from the Plugins Directory with `/plugins`.
-
-**ChatGPT can install plugins too.** ChatGPT and Codex share the plugin directory. If Praxis is available in your account/workspace, install it from **Plugins** in ChatGPT. For the repository version before public-directory publication, a workspace admin can import the Praxis GitHub marketplace; local plugin testing is also supported in ChatGPT Desktop.
-
-The current Codex CLI supports `plugin add`. Older versions without that command require installation through the Plugins Directory. Installing a plugin on the web does not deploy local hook scripts into a local project runtime, so Praxis's project-local lifecycle behavior still needs a Codex/Work/Desktop execution environment that has the plugin files available.
-
 ### Cursor
 
 macOS / Linux / WSL:
