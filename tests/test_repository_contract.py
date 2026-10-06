@@ -17,6 +17,8 @@ class RepositoryContractTests(unittest.TestCase):
             "Code.md",
             "State.md",
             "README.md",
+            "README.zh-CN.md",
+            "LICENSE",
             "Docs/Architecture/Overview.md",
             "Docs/Architecture/Tutor Model.md",
             "Docs/Architecture/Harness Integration.md",
@@ -140,6 +142,7 @@ class RepositoryContractTests(unittest.TestCase):
             "Docs/Architecture/Harness%20Integration.md",
             "Docs/Specs/",
             "Docs/Development/Validation.md",
+            "AGPL-3.0-only",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, text)
