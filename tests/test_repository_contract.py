@@ -43,7 +43,9 @@ class RepositoryContractTests(unittest.TestCase):
     def test_agents_contract_names_core_invariants(self) -> None:
         text = self.read("AGENTS.md")
         for expected in (
-            "Tutor judgment loop is the product center",
+            "Tutor taste loop is the product center",
+            "Teach the distinction between credible alternatives",
+            "Verification should test the consequence",
             "Restoration is never approval",
             "Harness-specific APIs must not enter the neutral Python core",
             "Never claim Green without executing the applicable checks",
@@ -157,6 +159,49 @@ class RepositoryContractTests(unittest.TestCase):
         ):
             with self.subTest(implementation_detail=implementation_detail):
                 self.assertNotIn(implementation_detail, text)
+
+    def test_tutor_skill_encodes_taste_first_behavior(self) -> None:
+        skill = self.read("skills/praxis/SKILL.md")
+        behavior = self.read("skills/praxis/references/tutor-behavior.md")
+        policy = self.read("skills/praxis/references/decision-policy.md")
+        model = self.read("Docs/Architecture/Tutor Model.md")
+
+        for expected in (
+            "develop engineering taste",
+            "Notice a taste-bearing decision",
+            "Compare credible options",
+            "Teach what makes one choice better than another here",
+            "Tests passing is not proof that a design was good",
+            "Prefer X when Y because Z.",
+        ):
+            with self.subTest(source="skill", expected=expected):
+                self.assertIn(expected, skill)
+
+        for expected in (
+            "teaches the distinction, not just the answer",
+            "what it optimizes for",
+            "boundary condition",
+            "Do not equate \"tests passed\" with \"the design was good\"",
+            "reusable distinction",
+        ):
+            with self.subTest(source="behavior", expected=expected):
+                self.assertIn(expected, behavior)
+
+        for expected in (
+            "taste-bearing decision",
+            "locally easiest option differs from the structurally cleaner option",
+            "The distinction between them should be worth learning",
+        ):
+            with self.subTest(source="policy", expected=expected):
+                self.assertIn(expected, policy)
+
+        for expected in (
+            "The Tutor teaches distinctions, not just answers.",
+            "Passing tests alone does not prove that a design was good.",
+            "The product outcome is not merely a correct implementation.",
+        ):
+            with self.subTest(source="model", expected=expected):
+                self.assertIn(expected, model)
 
     def test_harness_architecture_records_codex_translation_boundary(self) -> None:
         text = self.read("Docs/Architecture/Harness Integration.md")
