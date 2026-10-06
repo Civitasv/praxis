@@ -15,10 +15,11 @@
 | Portable Codex plugin package | Feature-05 | `plugin.json`, `.codex-plugin/plugin.json`, `.agents/plugins/marketplace.json` |
 | Codex lifecycle adapter | Feature-05 | `plugins/codex/hooks/hooks.json`, `plugins/codex/hooks/praxis_context.py` |
 | Shared Python host recovery bridge | Feature-07 | `plugins/shared/recovery_hook.py` |
-| Cursor plugin package and lifecycle adapter | Feature-07 | `.cursor-plugin/plugin.json`, `plugins/cursor/hooks/` |
-| CodeBuddy plugin package and lifecycle adapter | Feature-07 | `.codebuddy-plugin/plugin.json`, `.codebuddy-plugin/marketplace.json`, `plugins/codebuddy/hooks/` |
+| Cursor plugin package, commands, and lifecycle adapter | Feature-07 | `.cursor-plugin/plugin.json`, `plugins/cursor/commands/`, `plugins/cursor/hooks/` |
+| CodeBuddy plugin package, commands, and lifecycle adapter | Feature-07 | `.codebuddy-plugin/plugin.json`, `.codebuddy-plugin/marketplace.json`, `plugins/codebuddy/commands/`, `plugins/codebuddy/hooks/` |
 | Native DSH Cordis plugin / bundle | Feature-06 | `plugins/dsh/src/index.ts`, `plugins/dsh/cordis.patch.yml`, root `package.json` |
 | DSH Skill registration | Feature-06 | `plugins/dsh/src/skill.ts` |
+| DSH human control command | Feature-06 | `plugins/dsh/src/command.ts` |
 | DSH direct-argv neutral-core bridge | Feature-06 | `plugins/dsh/src/praxis-cli.ts` |
 | DSH bounded recovery renderer | Feature-06 | `plugins/dsh/src/context.ts` |
 | DSH Agent lifecycle adapter | Feature-06 | `plugins/dsh/src/lifecycle.ts` |
