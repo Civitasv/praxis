@@ -7,7 +7,7 @@
 <p align="center"><strong>Build with AI. Keep the judgment.</strong></p>
 
 <p align="center">
-  A skill for coding agents that makes consequential AI conclusions understandable<br>
+  A plugin for coding agents that makes consequential AI conclusions understandable<br>
   before the agent acts on them.
 </p>
 
@@ -27,11 +27,11 @@ That is useful. It also creates a strange failure mode:
 
 > You can get much better at producing software without getting much better at engineering it.
 
-Praxis is a skill for that gap.
+Praxis is a plugin for that gap.
 
-It runs inside the coding agent you already use. There is no second agent and no separate workflow.
+It extends the coding agent you already use rather than introducing another agent or a separate workflow. Its core Tutor behavior is implemented as a shared skill, with a small host-neutral core and thin host integrations around it.
 
-During mechanical work, the skill stays out of the way. When the agent reaches a consequential conclusion — about data ownership, state boundaries, failure behavior, dependencies, API shape, migration strategy — Praxis makes the reasoning legible before implementation continues.
+During mechanical work, Praxis stays out of the way. When the agent reaches a consequential conclusion — about data ownership, state boundaries, failure behavior, dependencies, API shape, migration strategy — the plugin makes the reasoning legible before implementation continues.
 
 ## What using Praxis feels like
 
@@ -46,7 +46,7 @@ Agent   I’ll use the database as the source of truth
         ✓ Implemented
 ```
 
-With the Praxis skill loaded:
+With the Praxis plugin enabled:
 
 ```text
 You     Add persistent chat history.
@@ -76,9 +76,9 @@ Agent   Exactly.
 
 It is still the same coding agent doing the work.
 
-Praxis only changes how the agent handles conclusions worth understanding: expose the reasoning, tradeoff, and boundary; make sure the mental model is clear; then continue.
+Praxis changes how the agent handles conclusions worth understanding: expose the reasoning, tradeoff, and boundary; make sure the mental model is clear; then continue.
 
-## What the skill adds
+## What the plugin adds
 
 | Situation | Agent with Praxis |
 | --- | --- |
@@ -97,7 +97,7 @@ Praxis should make the agent more productive **without making you less capable**
 
 ## Install
 
-Praxis is primarily a shared skill. A small host-neutral core and thin host integrations provide durable state, recovery, and installation across coding agents.
+Praxis is installed as a plugin for your coding agent. Its shared Tutor skill defines the core behavior; a small host-neutral core and thin integrations provide durable state and recovery across hosts.
 
 ### 1. Install the core
 
@@ -194,9 +194,9 @@ Praxis should intervene only when there is something worth learning from.
 
 ## Not a quiz. Not a second agent.
 
-Praxis is the skill loaded into your existing coding agent. It does not run beside it as another autonomous coder.
+Praxis is a plugin for your existing coding agent. It does not run beside it as another autonomous coder.
 
-The skill should not interrupt every implementation detail, ask you to defend obvious choices, or slow the project down for the sake of teaching.
+The plugin should not interrupt every implementation detail, ask you to defend obvious choices, or slow the project down for the sake of teaching.
 
 If you do not know the answer, **“I don't know” is a valid answer**.
 
@@ -300,9 +300,9 @@ Then reload plugins:
 
 ## Status
 
-The Praxis skill is currently **alpha**.
+Praxis is currently **alpha**.
 
-This repository packages the shared skill plus working integrations for Codex, Cursor, CodeBuddy, and DeepSeek Harness / Cordis. Distribution is currently source-based; public marketplace publication is not claimed yet.
+This repository packages the plugin across Codex, Cursor, CodeBuddy, and DeepSeek Harness / Cordis. The shared Tutor skill is the core behavior behind those integrations. Distribution is currently source-based; public marketplace publication is not claimed yet.
 
 ## Documentation
 
