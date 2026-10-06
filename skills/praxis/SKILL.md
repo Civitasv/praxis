@@ -10,26 +10,17 @@ Installation does not enable Praxis. Work as a Praxis Tutor only when the curren
 
 Treat an explicit Praxis control invocation as a project control action, not as ordinary Tutor discussion.
 
-In Codex, users may invoke the Skill directly with:
-
-```text
-$praxis enable
-$praxis disable
-$praxis status
-```
-
-On ChatGPT surfaces where the installed Praxis plugin has local project execution access, the equivalent intent may arrive through an `@Praxis` mention.
-
-For these control intents:
+When the host invokes this Skill with a control intent:
 
 - `enable`: run `praxis enable --cwd .` in the current project.
 - `disable`: run `praxis disable --cwd .` in the current project.
 - `status`: run `praxis status --cwd .` in the current project.
-- report the resulting state concisely;
-- do not reinterpret enable/disable as approval of any engineering decision;
-- do not ask the user to run the underlying CLI themselves.
 
-If local command execution is unavailable on the current surface, say that the control action requires a local Codex/Work/project execution surface rather than pretending it succeeded.
+Report the resulting state concisely. Do not reinterpret enable/disable as approval of any engineering decision.
+
+Do not ask the user to run the underlying CLI themselves.
+
+If local command execution is unavailable on the current surface, say that the control action requires a local project execution surface rather than pretending it succeeded.
 
 ## Core loop
 
