@@ -2,127 +2,176 @@
 
 **Build with AI. Keep the judgment.**
 
-Praxis is an AI tutor for building software with coding agents. It lets AI handle execution while keeping the human involved in consequential decisions, tradeoffs, and feedback that build engineering judgment.
+Praxis is an AI tutor for building software with coding agents.
 
-## Architecture direction
+AI has made it dramatically easier to produce software. But producing a working artifact is not the same thing as experiencing the decisions required to build it, and it is not the same thing as gaining the judgment to make those decisions again.
 
-Praxis uses a Python 3.10+ standard-library neutral core, a shared English Tutor Skill, and thin host adapters.
+Praxis is built around that gap.
 
-```text
-host lifecycle ──→ thin adapter ──→ shared Praxis Tutor Skill
-                                        |
-                                        v
-                                 neutral Python core
-                                        |
-                                        v
-                               project-local .praxis/
-```
+## Philosophy
 
-Harness-specific APIs must not enter the neutral Python core.
-
-## Current status
-
-Features 01–06 are implemented: the AI-native repository foundation, Praxis State Core, Verified Project Model, host-neutral Tutor Decision Loop, Codex Integration, and native DeepSeek Harness/Cordis Integration.
-
-Feature-02 provides project-boundary discovery, symlink-safe project state paths, format-versioned `.praxis/state.json`, bounded write locking, atomic replacement, compare-and-swap revisions, durable multi-task records, pause/resume state, and a JSON CLI contract.
-
-Feature-03 adds machine-owned source fingerprints, section-level compare-and-swap, incremental stale detection, and deterministic `.praxis/code.md` recovery. `state.json.project_model` remains authoritative.
-
-Feature-04 adds durable decision provenance and decision-level compare-and-swap. Engineering/architectural decisions keep user proposal, verified constraints, Praxis challenge, selected decision, user reasoning, implementation result, and verification separate:
+For most of software history, engineering judgment was accumulated through repetition:
 
 ```text
-open -> selected -> implemented -> verified
+make a decision
+→ implement it
+→ observe what happened
+→ update your mental model
+→ make a better decision next time
 ```
 
-`superseded` and `abandoned` are explicit terminal alternatives. An AI recommendation, restart, recovery, or silence cannot turn an open choice into a selected one. Authoritative decision records live in `state.json.decisions`; `.praxis/decisions.md` is a deterministic rebuildable projection.
+Coding agents can now skip much of that experience. They can choose the data model, architecture, state ownership, failure strategy, dependency, and API shape — then hand you a finished implementation.
 
-The shared Praxis Tutor Skill under `skills/praxis/` encodes the host-neutral loop: inspect verified facts, surface consequential choices, teach or challenge when needed, record explicit agreement, implement, verify, and connect observed results back to the decision.
+That is useful, but it creates a new failure mode:
 
-### Codex integration
+> You can become much better at producing software without becoming much better at engineering it.
 
-Feature-05 packages Praxis as a portable Codex plugin using root `plugin.json`, a `.codex-plugin/plugin.json` compatibility fallback, and thin lifecycle hooks under `plugins/codex/hooks/`.
+Praxis keeps the productive part of AI automation while preserving the part that builds judgment.
 
-The adapter handles Codex `SessionStart` events for startup, resume, clear, and compact, plus `UserPromptSubmit`. For an enabled project it refreshes machine-owned project freshness, identifies exact or candidate durable tasks, summarizes relevant open decisions and blocked scopes, and injects no more than **3000 characters** of deterministic recovery context.
+The agent should handle mechanical execution. Praxis keeps consequential choices visible.
 
-Plugin installation does not enable a project. Explicit `praxis enable --cwd <path>` remains the activation boundary. An uninitialized project is silent, and a paused project stays paused.
+When a decision matters, Praxis should help you understand:
 
-Automatic recovery does not parse prompt text as approval and does not read transcript history. Recovery never selects a decision, marks implementation complete, or marks verification complete.
+- what is actually being decided;
+- what constraints the real project imposes;
+- what the meaningful alternatives are;
+- what each alternative gives up;
+- what happened after the choice was implemented.
 
-Codex hook execution is subject to host installation, execution-environment availability, and hook **trust**. Repository CI validates package files and adapter behavior, but it does not claim that hooks are active in a particular user's Codex environment. If automatic hooks are unavailable, the shared Praxis Tutor Skill remains the **manual** fallback.
+Then the agent can keep moving.
 
-### DeepSeek Harness / Cordis integration
+Praxis is not a quiz system and it does not try to slow work down for the sake of teaching. The learning happens inside the real project, through real decisions and their consequences.
 
-Feature-06 replaces the original DSH seam with a native Cordis plugin under `plugins/dsh/`. It is tested against the current DSH preview family `0.2.1-alpha.1` and Cordis `4.0.5-alpha.1`.
+If you do not know the answer, **“I don't know” is a valid answer**. Praxis should explain enough for the next meaningful choice instead of turning the interaction into an exam.
 
-The plugin registers the same shared Praxis Skill and listens to DSH `agent/created` plus `agent/pre-step`. Session creation/resume can inject durable recovery context through `agent.inject()`; later user-driven steps synchronize only when the rendered recovery snapshot changes. Empty continuation steps are ignored, and downstream reject decisions are preserved.
+## What using Praxis feels like
 
-DSH does not interpret the user's prompt as approval. Exact/candidate tasks, open decisions, blocked scopes, and stale/unknown project sections come from:
+Without Praxis:
+
+```text
+You: Add persistent chat history.
+
+Agent: Done.
+```
+
+With Praxis:
+
+```text
+You: Add persistent chat history.
+
+Praxis: There is one consequential choice before implementation:
+        what owns durable message history?
+
+        Redis-only is simpler, but losing Redis loses history.
+        A database source of truth adds another dependency but gives
+        durable ownership and makes Redis disposable.
+
+You: I don't know which one I want.
+
+Praxis: If message history must survive cache loss or restarts,
+        use the database as the source of truth and Redis only for
+        transient delivery/cache behavior.
+
+You: Do that.
+
+Agent: Implements it and verifies restart behavior.
+
+Praxis: The implementation matched the decision:
+        history survived the Redis restart, so the ownership boundary
+        behaved as intended.
+```
+
+The point is not that you typed more. The point is that the important decision stayed visible long enough to become part of your own mental model.
+
+## Quick start
+
+Praxis currently runs from source and supports **Codex** and **DeepSeek Harness / Cordis**.
+
+### 1. Get Praxis
 
 ```bash
-python -m praxis recovery-status --cwd . --host dsh --conversation-id <session-id>
+git clone https://github.com/Civitasv/praxis.git
+cd praxis
 ```
 
-The TypeScript adapter invokes this through direct argv execution with `shell: false` and caps injected context at **3000 characters**. It uses `python3` by default on POSIX, `py -3` on Windows, and accepts `PRAXIS_PYTHON` as an executable-path override. Its model-facing message source is `praxis-dsh`.
+Python 3.10+ is required.
 
-Installing or checking out this repository does not enable Praxis, and Feature-06 **does not install** the private `@praxis/plugin-dsh` package into any DSH **profile**. Repository CI proves package/API/lifecycle behavior; profile composition and external package publication remain deployment concerns.
+### 2. Enable Praxis for a project
 
-## State CLI
+From the Praxis checkout:
 
 ```bash
-python -m praxis status --cwd .
-python -m praxis enable --cwd .
-python -m praxis pause --cwd . --expected-revision 0
-python -m praxis task-create --cwd . --expected-revision 0 --host codex --title "Auth design"
-python -m praxis recovery-status --cwd . --host dsh --conversation-id session-id
+python -m praxis enable --cwd /path/to/your-project
 ```
 
-State and recovery commands emit JSON for adapter consumption. Mutations require expected revisions where applicable so stale writers cannot overwrite newer state.
+Enabling is project-local. Installing or loading the host integration does **not** automatically enable Praxis in every repository.
 
-## Verified project model CLI
+You can inspect the current project state with:
 
 ```bash
-python -m praxis map-status --cwd .
-python -m praxis map-upsert --cwd . \
-  --section-id auth \
-  --title "Authentication" \
-  --content "Owns authentication and session lifecycle." \
-  --evidence src/auth.py
-python -m praxis map-check --cwd .
-python -m praxis map-render --cwd .
+python -m praxis status --cwd /path/to/your-project
 ```
 
-## Tutor decision CLI
+### 3. Make Praxis available to your coding agent
 
-```bash
-python -m praxis decision-status --cwd .
-python -m praxis decision-create --cwd . \
-  --task-id task_... \
-  --class engineering \
-  --title "Message persistence" \
-  --context "Choose the durable source of truth"
-python -m praxis decision-select --cwd . \
-  --decision-id decision_... \
-  --expected-decision-revision 0 \
-  --selected-decision "Database source of truth"
-python -m praxis decision-render --cwd .
+**Codex**
+
+Use this repository as a local Codex plugin. The repository root contains the Praxis plugin manifest and shared Tutor Skill.
+
+**DeepSeek Harness / Cordis**
+
+Use the plugin under `plugins/dsh/` in your DSH/Cordis composition. The DSH package is currently repository-local rather than published to npm.
+
+Host setup and compatibility details live in [Docs/Architecture/Harness Integration.md](Docs/Architecture/Harness%20Integration.md).
+
+### 4. Work normally
+
+There is no special “Praxis task language” you need to learn.
+
+Ask the coding agent to build something:
+
+```text
+Add organization-level API keys.
+
+Move this app from local state to persisted projects.
+
+Add retries to the payment workflow.
+
+Refactor authentication so web and CLI share the same session model.
 ```
 
-`decision-implemented` and `decision-verify` remain separate so implementation cannot masquerade as verification.
+Praxis should stay out of mechanical work and intervene when a choice is consequential enough to improve future engineering judgment.
 
-## Repository navigation
+When it surfaces a decision, you can:
 
-Start with `Code.md`, then `State.md`, then the relevant document under `Docs/Architecture/` or `Docs/Specs/`, then source and tests.
+- give your current proposal;
+- ask for the tradeoffs;
+- say you are unsure;
+- accept a recommendation;
+- choose a different direction and explain why.
 
-## Development
+Once the decision is explicit, the agent continues implementation and verification.
 
-```bash
-python -m unittest discover -s tests -v
-python -m compileall -q praxis tests
-python -m unittest tests.test_codex_plugin_manifest tests.test_codex_hooks_manifest tests.test_codex_context tests.test_codex_recovery tests.test_codex_distribution -v
-python -m compileall -q plugins/codex praxis
-pnpm install --no-frozen-lockfile
-pnpm typecheck
-pnpm test:dsh
-```
+## What Praxis tries to preserve
 
-Until a real reviewed `pnpm-lock.yaml` is generated by pnpm and committed, the repository intentionally uses `--no-frozen-lockfile`.
+Praxis is designed around a simple separation:
+
+**AI should remove unnecessary effort. It should not remove the experiences from which judgment is formed.**
+
+That means a healthy Praxis session should leave you with more than a finished diff. You should also know why important choices were made, what tradeoffs were accepted, and whether reality supported the original reasoning.
+
+Over time, the goal is not to make you dependent on Praxis.
+
+The goal is for decisions that once required explanation to become decisions you can make well yourself.
+
+## Documentation
+
+README is intentionally product-facing. Implementation details and repository internals live under `Docs/`:
+
+- [Architecture overview](Docs/Architecture/Overview.md)
+- [Tutor model](Docs/Architecture/Tutor%20Model.md)
+- [Codex and DSH integration](Docs/Architecture/Harness%20Integration.md)
+- [Feature specifications](Docs/Specs/)
+- [Development and validation](Docs/Development/Validation.md)
+
+For contributors working on the repository itself, start with [Code.md](Code.md) and [State.md](State.md).
