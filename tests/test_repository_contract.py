@@ -34,6 +34,10 @@ class RepositoryContractTests(unittest.TestCase):
             with self.subTest(relative=relative):
                 self.assertTrue((ROOT / relative).is_file(), relative)
 
+    def test_repository_uses_single_canonical_docs_tree(self) -> None:
+        self.assertTrue((ROOT / "Docs").is_dir())
+        self.assertFalse((ROOT / "docs").exists())
+
     def test_agents_contract_names_core_invariants(self) -> None:
         text = self.read("AGENTS.md")
         for expected in (
