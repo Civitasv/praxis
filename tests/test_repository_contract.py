@@ -123,7 +123,7 @@ class RepositoryContractTests(unittest.TestCase):
     def test_readme_is_product_facing_and_routes_internals_to_docs(self) -> None:
         text = self.read("README.md")
         for expected in (
-            "Build with AI. Keep the judgment.",
+            "Build with AI. Develop taste.",
             "## Philosophy",
             "## What using Praxis feels like",
             "## Install",
