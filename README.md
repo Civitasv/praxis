@@ -83,58 +83,80 @@ Praxis: The implementation matched the decision:
 
 The point is not that you typed more. The point is that the important decision stayed visible long enough to become part of your own mental model.
 
-## Quick start
+## Install
 
-Praxis currently runs from source and supports **Codex**, **Cursor**, **CodeBuddy**, and **DeepSeek Harness / Cordis**.
-
-### 1. Get Praxis
+Praxis has two parts: the small project-state CLI and the integration for your coding agent. Install the CLI once:
 
 ```bash
-git clone https://github.com/Civitasv/praxis.git
-cd praxis
+python3 -m pip install --user 'git+https://github.com/Civitasv/praxis.git'
 ```
 
-Python 3.10+ is required.
+Python 3.10+ is required. On Windows, use `py -m pip install --user 'git+https://github.com/Civitasv/praxis.git'`.
 
-### 2. Enable Praxis for a project
+Then install the integration for the agent you use.
 
-From the Praxis checkout:
+### Codex
 
 ```bash
-python -m praxis enable --cwd /path/to/your-project
+codex plugin marketplace add Civitasv/praxis
+codex
 ```
 
-Enabling is project-local. Installing or loading the host integration does **not** automatically enable Praxis in every repository.
+Inside Codex, run `/plugins`, find **Praxis**, and install it.
 
-You can inspect the current project state with:
+Codex's current CLI can add and manage marketplace sources, but it **does not currently expose a non-interactive plugin install command**, so the final install action is still done in `/plugins`.
+
+### Cursor
+
+macOS / Linux / WSL:
 
 ```bash
-python -m praxis status --cwd /path/to/your-project
+mkdir -p ~/.cursor/plugins/local && git clone --depth 1 https://github.com/Civitasv/praxis.git ~/.cursor/plugins/local/praxis
 ```
 
-### 3. Make Praxis available to your coding agent
+Restart Cursor or run **Developer: Reload Window**.
 
-**Codex**
+Cursor's `agent` CLI **does not currently expose a plugin-install subcommand**. The command above uses Cursor's official local-plugin directory. Do not replace the checkout with a symlink to a repository outside that directory; Cursor skips those external symlinks.
 
-Use this repository as a local Codex plugin. The repository root contains the Praxis plugin manifest and shared Tutor Skill.
+### DeepSeek Harness / Cordis
 
-**Cursor**
+Install Praxis into the profile you use:
 
-Use this repository as a local Cursor plugin. Praxis reuses the same Tutor Skill and project state.
+```bash
+dsh plugin --profile web add github:Civitasv/praxis
+```
 
-**CodeBuddy**
+Then restart that profile:
 
-Use this repository as a local CodeBuddy plugin. Praxis reuses the same Tutor Skill and project state.
+```bash
+dsh --profile web
+```
 
-**DeepSeek Harness / Cordis**
+Replace `web` with your own DSH profile name when needed. DSH plugin management requires `pnpm` on `PATH`.
 
-Use the plugin under `plugins/dsh/` in your DSH/Cordis composition. The DSH package is currently repository-local rather than published to npm.
+### CodeBuddy
 
-Host setup and compatibility details live in [Docs/Architecture/Harness Integration.md](Docs/Architecture/Harness%20Integration.md).
+```bash
+codebuddy plugin marketplace add Civitasv/praxis --name praxis && codebuddy plugin install praxis@praxis
+```
 
-### 4. Work normally
+The command adds the Praxis marketplace and installs Praxis at user scope. Use `--scope project` on the install command if you want the project to declare the plugin for collaborators.
 
-There is no special “Praxis task language” you need to learn.
+## Enable Praxis in a project
+
+Installing an integration does **not** enable Praxis in every repository. From the project you want to use:
+
+```bash
+python3 -m praxis enable --cwd .
+```
+
+Check its state with:
+
+```bash
+python3 -m praxis status --cwd .
+```
+
+Then work normally. There is no special “Praxis task language” to learn.
 
 Ask the coding agent to build something:
 
