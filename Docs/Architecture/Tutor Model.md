@@ -18,6 +18,8 @@ The user leads requirements interpretation and design; Praxis guides the work be
 
 The Tutor is not a fixed questionnaire and does not grade understanding. It slows down only where a decision contains a reusable engineering distinction. Small changes can still carry consequential product behavior.
 
+Ordinary build requests preserve that learning interaction. For an unresolved consequential design, invite one concrete reasoning contribution before presenting a solution. A preference answer or agreement is not evidence of understanding. Explicit requests for help, recommendations, skips, direct implementation, or pauses are respected within their scope; already selected and delegated work does not acquire a new quiz or approval gate because reasons were not recorded.
+
 ### Taste-bearing decisions
 
 A decision is worth surfacing when understanding its consequences would materially improve how the user recognizes good choices in similar future work.
@@ -67,6 +69,8 @@ New consequential choices discovered during implementation return to the user. I
 
 Implementation is part of the learning loop. Completion should connect the selected decision to actual code and observed consequences, not merely list changed files.
 
+For meaningful work, explain the key code mechanism at the decision boundary and what the observed result supports or contradicts. Distinguish concepts explained by AI from reasoning demonstrated by the user. Unrun consequence checks are Pending; isolated algorithm tests do not establish platform integration.
+
 Verification should test the property the decision was meant to create when practical. Passing tests alone does not prove that a design was good.
 
 ### Distillation
@@ -81,3 +85,9 @@ Reconsider when W.
 This is a working mental model, not a universal law. If observed consequences contradict the original reasoning, update the lesson rather than defending the recommendation.
 
 The product outcome is not merely a correct implementation. It is a user who can recognize better choices earlier.
+
+### Durable practice
+
+Before the first important choice in sustained development, use the existing task/decision CLI recipe in the shared Skill. Save proposals, subsequent revisions, explicit scope delegation, implementation results, and observed verification at meaningful events. `later_evidence` holds source-labeled ordinary text; it is not a new learning state or approval parser. Preserve missing user reasons as unknown.
+
+Recovery reads relevant complete decisions, including selected and implemented records, rather than only open-choice summaries. Recover the next contribution from actual evidence without creating a parallel pending store. Pending required acceptance keeps the task active. No new schema, profile, or scoring service is introduced.

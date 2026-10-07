@@ -94,6 +94,60 @@ class TutorScenarioPolicyTests(unittest.TestCase):
             with self.subTest(required=required):
                 self.assertIn(required, text)
 
+    def test_build_requests_and_short_answers_preserve_reasoning_opportunities(self) -> None:
+        behavior = self.text("tutor-behavior.md")
+        for required in (
+            "ordinary build requests retain the learning loop",
+            "a brief answer or hesitation is not evidence that the user is stuck",
+            "ask one concrete reasoning question",
+            "missing reasoning does not revoke an explicit selection or delegation",
+            "leave the project's design question open",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, behavior)
+
+    def test_implementation_feedback_explains_the_mechanism_and_evidence(self) -> None:
+        behavior = self.text("tutor-behavior.md")
+        for required in (
+            "the key code mechanism",
+            "what the observed result supports or contradicts",
+            "pending",
+            "state ownership example",
+            "clipboard restoration example",
+            "testing boundary example",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, behavior)
+
+    def test_recording_recipe_uses_existing_cli_and_separates_delegation(self) -> None:
+        recipe = self.text("state-format.md")
+        for command in (
+            "task-create", "decision-create", "decision-evidence", "decision-select",
+            "decision-implemented", "decision-verify", "task-update",
+        ):
+            with self.subTest(command=command):
+                self.assertIn(command, recipe)
+        for required in (
+            "user delegation", "returned revision", "partial", "pending",
+            "never edit state.json directly", "not a machine-readable stage",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, recipe)
+
+    def test_recovery_loads_selected_and_implemented_records_and_evidence(self) -> None:
+        recovery = self.text("recovery.md")
+        for required in (
+            "decision-status", "selected and implemented", "later_evidence",
+            "missing reasoning", "implementation delegation", "pending",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, recovery)
+
+    def test_recovery_does_not_relabel_observed_failure_as_pending(self) -> None:
+        recovery = self.text("recovery.md")
+        self.assertIn("unrun checks remain pending; observed failures remain fail", recovery)
+        self.assertNotIn("unrun or failed, leave it pending", recovery)
+
 
 if __name__ == "__main__":
     unittest.main()

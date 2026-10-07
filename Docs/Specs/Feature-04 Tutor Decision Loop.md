@@ -262,6 +262,11 @@ Behavior requirements:
 - verification targets the consequence the selected decision was intended to create when practical; green tests alone are not treated as proof of good design;
 - distillation connects alternatives -> reason -> implementation -> observed consequence -> reusable heuristic when evidence supports one;
 - Praxis does not claim mastery or understanding scores.
+- ordinary build requests preserve one concrete user reasoning opportunity for unresolved consequential choices; explicit recommendations, skips, direct implementation, and pauses retain their scoped meaning;
+- preference, explanation, demonstrated reasoning, selection, and delegation remain distinct; a brief reply does not imply inability, and missing reasoning does not revoke existing explicit selection/delegation;
+- meaningful implementation reports explain the key code mechanism and what observed evidence supports or contradicts, leaving unrun properties Pending;
+- sustained development records important decisions through the existing CLI at meaningful events, including source-labeled revisions, predictions, skips, delegation, and results in `later_evidence`; failed writes cannot support persistence claims;
+- recovery reads complete relevant decisions, including selected/implemented records, and resumes the missing contribution without interpreting free-text wait notes as new machine state.
 
 ### Node presentation
 
